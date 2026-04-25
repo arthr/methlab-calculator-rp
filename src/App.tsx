@@ -375,12 +375,40 @@ export default function App() {
                         <div className="text-[10px] font-mono text-emerald-400/50">HASH: {Math.random().toString(16).slice(2, 8).toUpperCase()}</div>
                       </div>
 
-                      <div className="relative z-10 py-10">
-                        <h3 className="text-slate-400 uppercase text-[10px] font-black tracking-[0.4em] mb-4">Produção Final Estimada</h3>
-                        <div className="text-9xl font-black text-white font-mono tracking-tighter leading-none mb-2 tabular-nums">
+                      <div className="relative z-10 py-6 w-full">
+                        <h3 className="text-slate-400 uppercase text-[10px] font-black tracking-[0.4em] mb-4">Produção Bruta</h3>
+                        <div className="text-7xl font-black text-white font-mono tracking-tighter leading-none mb-2 tabular-nums">
                             {calculation.totalProduced.toLocaleString()}
                         </div>
-                        <div className="text-emerald-400 font-black text-2xl uppercase tracking-[0.2em] italic">UNIDADES PURAS</div>
+                        <div className="text-emerald-400 font-black text-sm uppercase tracking-[0.2em] italic mb-6">UNIDADES PURAS</div>
+                        
+                        {/* Tax Breakdown Disclaimer */}
+                        <div className="bg-[#0f1115] border border-slate-700/50 rounded-2xl p-5 text-left mb-4 space-y-4 relative">
+                            <div className="flex items-center gap-2 text-orange-400 mb-2">
+                                <AlertCircle className="w-4 h-4" />
+                                <span className="text-[10px] font-black uppercase tracking-widest">Aviso de Taxa da Organização</span>
+                            </div>
+                            
+                            <div className="space-y-2">
+                                <div className="flex justify-between items-center opacity-60">
+                                    <span className="text-[10px] font-bold uppercase tracking-tight text-slate-400">Total Produzido</span>
+                                    <span className="text-xs font-mono font-bold text-white">{calculation.totalProduced} un</span>
+                                </div>
+                                <div className="flex justify-between items-center text-red-400/80">
+                                    <span className="text-[10px] font-bold uppercase tracking-tight">Taxa Família (50%)</span>
+                                    <span className="text-xs font-mono font-bold">-{calculation.totalProduced * 0.5} un</span>
+                                </div>
+                                <div className="pt-2 border-t border-slate-800 flex justify-between items-center">
+                                    <span className="text-[11px] font-black uppercase tracking-widest text-emerald-400">Seu Lucro Final</span>
+                                    <span className="text-xl font-mono font-black text-white">{(calculation.totalProduced * 0.5).toLocaleString()} un</span>
+                                </div>
+                            </div>
+
+                            <p className="text-[9px] text-slate-500 italic mt-3 leading-relaxed">
+                                *Conforme as regras da organização, 50% de toda a produção deve ser entregue imediatamente após o término do processamento.
+                            </p>
+                        </div>
+
                         <div className="mt-4 inline-flex items-center px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-emerald-400 font-bold text-xs uppercase tracking-widest">
                             <Package className="w-4 h-4 mr-2" />
                             {calculation.batches} Lotes de 100
