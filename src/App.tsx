@@ -50,12 +50,72 @@ export default function App() {
     plastic: '',
     ephedrine: '',
   });
+  const [manuallyEdited, setManuallyEdited] = useState<Set<ItemKey>>(new Set());
+  const [lastEditedKey, setLastEditedKey] = useState<ItemKey | null>(null);
 
   const [activeInput, setActiveInput] = useState<ItemKey | 'none'>('none');
 
+  const applyBatchesPreset = (num: number) => {
+    const nextQuantities = (Object.keys(REQUIREMENTS) as ItemKey[]).reduce((acc, k) => {
+      acc[k] = (num * REQUIREMENTS[k]).toString();
+      return acc;
+    }, {} as Record<ItemKey, string>);
+    
+    setQuantities(nextQuantities);
+    setManuallyEdited(new Set()); 
+  };
+
+  const adjustBatches = (delta: number) => {
+    const currentBatches = calculation?.batches || 0;
+    const next = Math.max(0, currentBatches + delta);
+    applyBatchesPreset(next);
+  };
+
   const handleInputChange = (key: ItemKey, value: string) => {
     if (value !== '' && !/^\d+$/.test(value)) return;
-    setQuantities(prev => ({ ...prev, [key]: value }));
+    
+    setQuantities(prev => {
+      const nextManuallyEdited = new Set(manuallyEdited);
+      if (value === '') {
+        nextManuallyEdited.delete(key);
+      } else {
+        nextManuallyEdited.add(key);
+      }
+      
+      const nextQuantities = { ...prev, [key]: value };
+      
+      // Determine target batches from all manual inputs
+      const manualKeys = (Object.keys(REQUIREMENTS) as ItemKey[]).filter(k => 
+        nextManuallyEdited.has(k) && nextQuantities[k] !== '' && parseInt(nextQuantities[k]) >= 0
+      );
+      
+      let targetBatches = 0;
+      if (manualKeys.length > 0) {
+        // If multiple manual inputs, target is driven by the bottleneck to show surplus
+        // If only one, target is driven by that one to show requirements
+        if (manualKeys.length === 1) {
+          const k = manualKeys[0];
+          targetBatches = Math.floor(parseInt(nextQuantities[k]) / REQUIREMENTS[k]);
+        } else {
+          targetBatches = manualKeys.reduce((min, k) => {
+            const b = Math.floor(parseInt(nextQuantities[k]) / REQUIREMENTS[k]);
+            return b < min ? b : min;
+          }, Infinity);
+        }
+      }
+
+      // Update non-manual ones to match target batches
+      (Object.keys(REQUIREMENTS) as ItemKey[]).forEach(k => {
+        if (!nextManuallyEdited.has(k)) {
+          nextQuantities[k] = (manualKeys.length > 0 && targetBatches >= 0) 
+            ? (targetBatches * REQUIREMENTS[k]).toString() 
+            : '';
+        }
+      });
+      
+      setManuallyEdited(nextManuallyEdited);
+      return nextQuantities;
+    });
   };
 
   const clearAll = () => {
@@ -65,6 +125,8 @@ export default function App() {
       plastic: '',
       ephedrine: '',
     });
+    setManuallyEdited(new Set());
+    setLastEditedKey(null);
     setActiveInput('none');
   };
 
@@ -198,9 +260,44 @@ export default function App() {
               
               {/* Inputs */}
               <section className="space-y-8">
-                <div>
-                  <h1 className="text-3xl font-black text-white italic tracking-tight mb-2 uppercase">Laboratório de Produção</h1>
-                  <p className="text-slate-500 text-sm font-medium">Informe a quantidade exata de insumo para verificação imediata de rendimento.</p>
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                  <div>
+                    <h1 className="text-3xl font-black text-white italic tracking-tight mb-2 uppercase">Laboratório de Produção</h1>
+                    <p className="text-slate-500 text-sm font-medium">Informe a coleta ou use os atalhos de carregamento.</p>
+                  </div>
+                  
+                  {/* Farm Presets */}
+                  <div className="flex items-center gap-2 bg-[#161b22] p-1.5 rounded-xl border border-slate-800">
+                    <button 
+                      onClick={() => adjustBatches(-1)}
+                      className="w-10 h-10 flex items-center justify-center rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold transition-all active:scale-95"
+                    >
+                      -
+                    </button>
+                    <div className="px-3 text-center min-w-[60px]">
+                      <p className="text-[8px] font-black text-slate-500 uppercase">Farm</p>
+                      <p className="text-sm font-mono font-bold text-white">{calculation?.batches || 0}</p>
+                    </div>
+                    <button 
+                      onClick={() => adjustBatches(1)}
+                      className="w-10 h-10 flex items-center justify-center rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold transition-all active:scale-95"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-3">
+                  {[1, 5, 10, 20].map(n => (
+                    <button
+                      key={n}
+                      onClick={() => applyBatchesPreset(n)}
+                      className="px-4 py-2 bg-[#161b22] border border-slate-700/50 rounded-xl text-[10px] font-black text-slate-400 uppercase tracking-widest hover:border-emerald-500 hover:text-emerald-400 transition-all active:scale-95 flex items-center gap-2"
+                    >
+                      <Package className="w-3 h-3" />
+                      {n} {n === 1 ? 'Farm' : 'Farms'}
+                    </button>
+                  ))}
                 </div>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">
@@ -231,7 +328,7 @@ export default function App() {
                               onFocus={() => setActiveInput(key)}
                               onBlur={() => setActiveInput('none')}
                               onChange={(e) => handleInputChange(key, e.target.value)}
-                              placeholder={calculation && calculation.needed[key] > 0 ? `Necessário: ${calculation.needed[key]}` : "0"}
+                              placeholder="0"
                               className={`w-full bg-[#161b22] border p-6 rounded-2xl text-2xl font-mono text-white outline-none transition-all placeholder:text-slate-700 ${
                                   activeInput === key 
                                   ? 'border-emerald-500 ring-4 ring-emerald-500/10 shadow-[0_0_15px_rgba(16,185,129,0.1)]' 
@@ -240,22 +337,9 @@ export default function App() {
                                   : 'border-slate-700/50 focus:border-emerald-500'
                               }`}
                           />
-                          {calculation && calculation.needed[key] > 0 && !hasValue && (
-                             <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                                <button 
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    handleInputChange(key, calculation.needed[key].toString());
-                                  }}
-                                  className="px-2 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-400/20 rounded text-[9px] font-black text-emerald-400 uppercase tracking-tighter transition-colors pointer-events-auto"
-                                >
-                                  Auto-Fill
-                                </button>
-                             </div>
-                          )}
                           {hasValue && (
                             <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-20 capitalize text-[10px] font-bold text-slate-400 pointer-events-none">
-                                possuído
+                                {manuallyEdited.has(key) ? 'possuído' : 'auto-fill'}
                             </div>
                           )}
                         </div>
