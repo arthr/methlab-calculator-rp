@@ -1,1 +1,33 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@1,300;1,400;1,500;1,600&family=Courgette&display=swap');
 @import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-script: "Courgette", cursive;
+  --font-serif: "Cormorant Garamond", serif;
+  
+  --color-brand-purple: #7C3AED;
+  --color-brand-purple-dark: #5B21B6;
+  --color-brand-gold: #F59E0B;
+  --color-brand-silver: #94A3B8;
+}
+
+@layer base {
+  body {
+    @apply bg-[#0f1115] text-slate-300 antialiased;
+  }
+}
+
+@layer utilities {
+  .bg-camo {
+    background-image: 
+      radial-gradient(circle at 20% 30%, rgba(124, 58, 237, 0.05) 0%, transparent 40%),
+      radial-gradient(circle at 80% 70%, rgba(124, 58, 237, 0.08) 0%, transparent 40%),
+      url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+  }
+  
+  .text-shadow-silver {
+    text-shadow: 2px 2px 4px rgba(148, 163, 184, 0.2);
+  }
+}
