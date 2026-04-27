@@ -207,127 +207,137 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#0f1115] text-slate-200 font-sans flex flex-col selection:bg-brand-purple/30 bg-camo">
       {/* Header Navigation */}
-      <nav className="border-b border-slate-800 bg-[#161b22]/80 backdrop-blur-md px-8 py-4 flex justify-between items-center shrink-0 sticky top-0 z-50">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-brand-purple rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/20 transition-transform hover:scale-105 active:scale-95 cursor-pointer border border-white/10">
-            <Crown className="h-6 w-6 text-brand-gold drop-shadow-[0_0_5px_rgba(245,158,11,0.5)]" />
+      <nav className="border-b border-slate-800/60 bg-[#161b22]/90 backdrop-blur-xl px-8 py-4 flex justify-between items-center shrink-0 sticky top-0 z-50">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-gradient-to-br from-brand-purple to-brand-purple-dark rounded-2xl flex items-center justify-center shadow-2xl shadow-purple-900/40 border border-white/10 group active:scale-95 transition-transform">
+            <Crown className="h-7 w-7 text-brand-gold gold-glow group-hover:rotate-12 transition-transform" />
           </div>
           <div className="flex flex-col">
-            <span className="font-black tracking-tighter text-2xl text-white italic leading-none">D'LA <span className="text-brand-purple font-black">NORTE</span></span>
-            <span className="text-slate-500 text-[8px] font-black uppercase tracking-[0.3em] ml-0.5">Laboratório de Processamento</span>
+            <span className="font-black tracking-tighter text-3xl italic leading-none text-metallic">D'LA NORTE</span>
+            <span className="text-slate-500 text-[9px] font-black uppercase tracking-[0.4em] ml-0.5 mt-1">SISTEMA OPERACIONAL</span>
           </div>
         </div>
-        <div className="hidden lg:block">
-            <span className="text-white/40 font-script text-sm italic">Dos escombros construímos história</span>
+        
+        <div className="hidden lg:flex items-center gap-8">
+            <div className="flex flex-col items-end">
+               <span className="text-white/30 font-script text-base italic -mb-1">Dos escombros construímos história</span>
+               <span className="text-[8px] font-black text-brand-purple/40 uppercase tracking-[0.5em]">Laboratório de Processamento</span>
+            </div>
         </div>
+
         <button 
           onClick={clearAll}
-          className="p-2 hover:bg-white/5 rounded-lg transition-colors text-slate-500 hover:text-brand-purple flex items-center gap-2"
+          className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-brand-purple/10 border border-slate-800 hover:border-brand-purple/30 rounded-xl transition-all text-slate-400 hover:text-brand-purple active:scale-95"
         >
           <RefreshCw className="w-4 h-4" />
-          <span className="text-[10px] font-bold uppercase tracking-widest hidden sm:inline">Resetar</span>
+          <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">Limpar</span>
         </button>
       </nav>
 
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* Sidebar: Recipe Info */}
-        <aside className="w-full md:w-80 bg-[#161b22]/50 backdrop-blur-sm border-b md:border-b-0 md:border-r border-slate-800/50 p-8 flex flex-col shrink-0 overflow-y-auto">
-          <h2 className="text-xs font-black text-slate-500 uppercase mb-6 tracking-[0.2em] flex items-center gap-2">
-            <Calculator className="w-3 h-3 text-brand-purple" />
-            Protocolo de Insumos
+        <aside className="w-full md:w-80 glass-card p-8 flex flex-col shrink-0 overflow-y-auto">
+          <h2 className="text-[10px] font-black text-slate-500 uppercase mb-8 tracking-[0.3em] flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-brand-purple shadow-[0_0_8px_#7c3aed]"></div>
+            Insumos por Lote (100u)
           </h2>
-          <div className="space-y-4 mb-8">
+          <div className="space-y-3 mb-8">
             {(Object.keys(REQUIREMENTS) as ItemKey[]).map((key) => {
               const Icon = ITEM_ICONS[key];
               return (
-                <div key={key} className="flex items-center justify-between p-4 bg-[#0f1115] border border-slate-700/30 rounded-2xl transition-all hover:border-brand-purple/50 group">
+                <div key={key} className="flex items-center justify-between p-4 bg-[#0f1115]/50 border border-slate-800/40 rounded-2xl group hover:border-brand-purple/30 transition-colors">
                   <div className="flex items-center gap-3">
-                    <Icon className="w-4 h-4 text-slate-500 group-hover:text-brand-purple transition-colors" />
-                    <span className="text-xs font-bold text-slate-400 group-hover:text-white transition-colors">{ITEM_NAMES[key]}</span>
+                    <Icon className="w-4 h-4 text-slate-600 group-hover:text-brand-purple transition-colors" />
+                    <span className="text-[11px] font-bold text-slate-400 group-hover:text-white transition-colors uppercase tracking-tight">{ITEM_NAMES[key]}</span>
                   </div>
-                  <span className="font-mono text-brand-purple font-black text-sm tracking-widest">{REQUIREMENTS[key]}u</span>
+                  <span className="font-mono text-brand-purple/60 font-black text-xs tracking-widest group-hover:text-brand-purple">{REQUIREMENTS[key]}u</span>
                 </div>
               );
             })}
           </div>
           
-          <div className="mt-auto p-5 bg-purple-600/5 border border-brand-purple/20 rounded-3xl text-[11px] leading-relaxed relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
-                <Crown className="w-8 h-8 text-brand-gold" />
+          <div className="mt-auto p-6 bg-brand-purple/5 border border-brand-purple/20 rounded-3xl relative overflow-hidden group">
+            <div className="absolute -top-4 -right-4 opacity-5 group-hover:opacity-10 group-hover:-rotate-12 transition-all duration-500">
+                <Crown className="w-24 h-24 text-brand-gold" />
             </div>
-            <p className="text-brand-purple font-black mb-2 uppercase tracking-widest text-[9px]">Aviso do Comando:</p>
-            <span className="text-slate-400 italic font-medium">A produção ocorre estritamente em lotes de 100 unidades. Qualquer resíduo deve ser mantido em estoque para o próximo ciclo.</span>
+            <p className="text-brand-purple font-black mb-3 uppercase tracking-widest text-[9px] flex items-center gap-2">
+               <Info className="w-3 h-3" />
+               Aviso do Comando
+            </p>
+            <span className="text-slate-400 italic text-[11px] leading-relaxed font-medium block">
+              Processamento em lotes de 100. Resíduos devem ser mantidos em estoque.
+            </span>
           </div>
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-8 overflow-y-auto bg-[#0f1115] relative">
-          <div className="max-w-4xl mx-auto h-full flex flex-col">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
+        <main className="flex-1 p-6 lg:p-10 overflow-y-auto relative">
+          <div className="max-w-5xl mx-auto h-full">
+            <div className="grid grid-cols-1 xl:grid-cols-[1fr,400px] gap-10">
               
               {/* Inputs */}
-              <section className="space-y-8">
-                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-                  <div>
-                    <h1 className="text-3xl font-black text-white italic tracking-tight mb-2 uppercase">Laboratório de Produção</h1>
-                    <p className="text-slate-500 text-sm font-medium">Informe a coleta ou use os atalhos de carregamento.</p>
+              <section className="space-y-10">
+                <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 border-b border-slate-800/60 pb-8">
+                  <div className="space-y-1">
+                    <h1 className="text-4xl font-black text-white italic tracking-tighter uppercase text-metallic">Operação</h1>
+                    <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Gerenciamento de recursos</p>
                   </div>
                   
-                  {/* Farm Presets */}
-                  <div className="flex items-center gap-2 bg-[#161b22] p-1.5 rounded-xl border border-slate-800 shadow-inner">
-                    <button 
-                      onClick={() => adjustBatches(-1)}
-                      className="w-10 h-10 flex items-center justify-center rounded-lg bg-brand-purple/10 hover:bg-brand-purple/20 text-brand-purple font-bold transition-all active:scale-95"
-                    >
-                      -
-                    </button>
-                    <div className="px-3 text-center min-w-[60px]">
-                      <p className="text-[8px] font-black text-slate-500 uppercase tracking-tighter">Ciclos</p>
-                      <p className="text-sm font-mono font-black text-brand-purple drop-shadow-[0_0_8px_rgba(124,58,237,0.3)]">{calculation?.batches || 0}</p>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-1 bg-[#161b22] px-2 py-1.5 rounded-xl border border-slate-800">
+                      <button 
+                        onClick={() => adjustBatches(-1)}
+                        className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-brand-purple/10 text-brand-purple/60 hover:text-brand-purple transition-all active:scale-90"
+                      >
+                        -
+                      </button>
+                      <div className="px-4 text-center min-w-[70px]">
+                        <p className="text-[7px] font-black text-slate-600 uppercase tracking-tighter">Ciclos</p>
+                        <p className="text-sm font-mono font-black text-brand-purple">{calculation?.batches || 0}</p>
+                      </div>
+                      <button 
+                        onClick={() => adjustBatches(1)}
+                        className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-brand-purple/10 text-brand-purple/60 hover:text-brand-purple transition-all active:scale-90"
+                      >
+                        +
+                      </button>
                     </div>
-                    <button 
-                      onClick={() => adjustBatches(1)}
-                      className="w-10 h-10 flex items-center justify-center rounded-lg bg-brand-purple/10 hover:bg-brand-purple/20 text-brand-purple font-bold transition-all active:scale-95"
-                    >
-                      +
-                    </button>
+
+                    <div className="flex items-center gap-2">
+                       {[1, 5, 10].map(n => (
+                         <button
+                           key={n}
+                           onClick={() => applyBatchesPreset(n)}
+                           className="px-4 py-3 bg-[#161b22] border border-slate-800 rounded-xl text-[10px] font-black text-slate-500 uppercase tracking-widest hover:border-brand-purple hover:text-brand-purple transition-all active:scale-95"
+                         >
+                           {n}F
+                         </button>
+                       ))}
+                    </div>
                   </div>
                 </div>
-
-                <div className="flex flex-wrap gap-3">
-                  {[1, 5, 10, 20].map(n => (
-                    <button
-                      key={n}
-                      onClick={() => applyBatchesPreset(n)}
-                      className="px-4 py-2 bg-[#161b22] border border-slate-700/50 rounded-xl text-[10px] font-black text-slate-400 uppercase tracking-widest hover:border-brand-purple hover:text-brand-purple transition-all active:scale-95 flex items-center gap-2"
-                    >
-                      <Crown className="w-3 h-3" />
-                      {n} {n === 1 ? 'Farm' : 'Farms'}
-                    </button>
-                  ))}
-                </div>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-8 gap-x-6">
                   {(Object.keys(REQUIREMENTS) as ItemKey[]).map((key) => {
                     const isMissing = calculation && calculation.missing[key] > 0;
                     const hasValue = quantities[key] !== '';
                     const isLimiting = calculation?.limitingFactors.includes(key);
 
                     return (
-                      <div key={key} className="space-y-2">
-                        <label className="text-[10px] uppercase font-black text-slate-500 tracking-[0.2em] flex justify-between items-center px-1">
-                          <span className="flex items-center gap-1">
+                      <div key={key} className="group">
+                        <label className="text-[9px] uppercase font-black text-slate-500 tracking-[0.2em] flex justify-between items-center px-1 mb-3">
+                          <span className="flex items-center gap-1.5">
+                            <span className={`w-1 h-1 rounded-full ${hasValue ? 'bg-brand-purple shadow-[0_0_5px_#7c3aed]' : 'bg-slate-800'}`}></span>
                             {ITEM_NAMES[key]}
-                            {isMissing && <span className="text-[9px] text-brand-purple font-black ml-1 bg-brand-purple/10 px-1 rounded">REQUERIDO</span>}
                           </span>
                           {isLimiting && calculation && calculation.batches > 0 && (
-                              <span className="text-brand-gold animate-pulse flex items-center gap-1 font-black italic">
-                                  <Crown className="w-3 h-3" />
-                                  LIMITANTE
+                              <span className="text-brand-gold flex items-center gap-1 font-black italic scale-90">
+                                  <Crown className="w-3 h-3 gold-glow" />
+                                  GARGALO
                               </span>
                           )}
                         </label>
-                        <div className={`relative transition-all duration-300 ${activeInput === key ? 'scale-[1.02]' : ''}`}>
+                        <div className="relative">
                           <input 
                               type="text" 
                               inputMode="numeric"
@@ -336,17 +346,18 @@ export default function App() {
                               onBlur={() => setActiveInput('none')}
                               onChange={(e) => handleInputChange(key, e.target.value)}
                               placeholder="0"
-                              className={`w-full bg-[#161b22]/80 backdrop-blur-sm border p-6 rounded-2xl text-2xl font-mono text-white outline-none transition-all placeholder:text-slate-800 ${
+                              className={`w-full bg-[#161b22]/60 backdrop-blur-sm border p-7 rounded-3xl text-3xl font-mono text-white outline-none transition-all placeholder:text-slate-800/50 ${
                                   activeInput === key 
-                                  ? 'border-brand-purple ring-4 ring-brand-purple/10 shadow-[0_0_15px_rgba(124,58,237,0.1)]' 
+                                  ? 'border-brand-purple ring-8 ring-brand-purple/5 shadow-2xl scale-[1.02]' 
                                   : isMissing
-                                  ? 'border-brand-purple/30'
-                                  : 'border-slate-800 focus:border-brand-purple'
+                                  ? 'border-brand-purple/20'
+                                  : 'border-slate-800 focus:border-brand-purple/50'
                               }`}
                           />
                           {hasValue && (
-                            <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-30 capitalize text-[9px] font-black text-slate-500 pointer-events-none tracking-widest">
-                                {manuallyEdited.has(key) ? 'COORDENADO' : 'AUTO-AJUSTE'}
+                            <div className="absolute right-6 top-1/2 -translate-y-1/2 opacity-30 capitalize text-[8px] font-black text-slate-500 pointer-events-none tracking-[0.2em] flex flex-col items-end">
+                                <span>UNIDADES</span>
+                                <span className="text-[7px] text-brand-purple mt-0.5">{manuallyEdited.has(key) ? 'COORDENADO' : 'AUTO-CALC'}</span>
                             </div>
                           )}
                         </div>
@@ -355,121 +366,132 @@ export default function App() {
                   })}
                 </div>
 
-                <div className="bg-[#161b22]/50 border border-slate-800 rounded-3xl p-6 text-center italic text-slate-500 text-xs">
-                    Certifique-se de que os materiais estão divididos corretamente antes de processar no laboratório.
+                <div className="flex items-center gap-4 p-5 bg-white/[0.02] border border-dashed border-slate-800 rounded-3xl opacity-50">
+                    <Info className="w-5 h-5 text-slate-600 shrink-0" />
+                    <p className="text-[10px] text-slate-500 leading-relaxed font-bold uppercase tracking-tight">
+                        Sistema recalcula automaticamente baseado no insumo limitante ou no preset selecionado.
+                    </p>
                 </div>
               </section>
 
               {/* Results */}
-              <section className="flex flex-col h-full min-h-[500px]">
+              <section className="h-full">
                 <AnimatePresence mode="wait">
                   {calculation ? (
                     <motion.div 
                         key="results"
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        className="flex-1 bg-[#161b22] rounded-3xl border border-slate-800 p-10 flex flex-col items-center justify-between text-center relative overflow-hidden group"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        className="flex-1 glass-card rounded-[2.5rem] p-10 flex flex-col items-center justify-between text-center relative overflow-hidden group"
                     >
-                      {/* Grid overlay */}
-                      <div className="absolute inset-0 opacity-[0.05] pointer-events-none bg-[radial-gradient(#7c3aed_1px,transparent_1px)] [background-size:32px_32px]"></div>
+                      {/* Brand Pattern overlay */}
+                      <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(#7c3aed_2px,transparent_2px)] [background-size:24px_24px]"></div>
 
-                      <div className="w-full flex justify-between items-center mb-4 relative z-10">
-                        <div className="flex items-center gap-2 text-[10px] uppercase font-black text-slate-500 tracking-widest">
-                           <span className="w-2 h-2 rounded-full bg-brand-purple animate-pulse shadow-[0_0_10px_#7c3aed]"></span> 
-                           Status: Processado
+                      <div className="w-full flex justify-between items-center mb-6 relative z-10">
+                        <div className="flex items-center gap-2 text-[9px] uppercase font-black text-slate-500 tracking-[0.3em]">
+                           <span className="w-2 h-2 rounded-full bg-brand-purple animate-pulse shadow-[0_0_12px_#7c3aed]"></span> 
+                           Processamento Ativo
                         </div>
-                        <div className="text-[10px] font-mono text-brand-purple/60 font-black">LOG: {Math.random().toString(16).slice(2, 8).toUpperCase()}</div>
+                        <div className="px-3 py-1 bg-brand-purple/10 border border-brand-purple/20 rounded-full text-[9px] font-mono text-brand-purple font-black">
+                           ID-EXEC: {Math.random().toString(16).slice(2, 8).toUpperCase()}
+                        </div>
                       </div>
 
-                      <div className="relative z-10 py-6 w-full">
-                        <h3 className="text-slate-500 uppercase text-[10px] font-black tracking-[0.5em] mb-4">Resultado Operacional</h3>
-                        <div className="text-8xl font-black text-white font-mono tracking-tighter leading-none mb-2 tabular-nums drop-shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+                      <div className="relative z-10 py-4 w-full group/main">
+                        <h3 className="text-slate-600 uppercase text-[9px] font-black tracking-[0.6em] mb-4 group-hover/main:text-brand-purple/60 transition-colors">Produção Teórica</h3>
+                        <div className="text-9xl font-black text-white font-mono tracking-tighter leading-none mb-3 tabular-nums drop-shadow-[0_0_30px_rgba(255,255,255,0.05)] text-metallic">
                             {calculation.totalProduced.toLocaleString()}
                         </div>
-                        <div className="text-brand-purple font-black text-base uppercase tracking-[0.3em] italic mb-8 flex items-center justify-center gap-2">
-                            <Box className="w-5 h-5" />
-                            Unidades Puras
+                        <div className="text-brand-purple font-black text-xs uppercase tracking-[0.4em] italic mb-10 flex items-center justify-center gap-3 opacity-80">
+                            <Box className="w-4 h-4" />
+                            Unidades Purificadas
                         </div>
                         
                         {/* Tax Breakdown Disclaimer */}
-                        <div className="bg-[#0f1115]/80 backdrop-blur-sm border border-slate-800 rounded-3xl p-6 text-left mb-6 space-y-4 relative shadow-2xl">
-                            <div className="flex items-center gap-2 text-brand-gold mb-3">
-                                <Crown className="w-5 h-5 drop-shadow-[0_0_5px_#f59e0b]" />
-                                <span className="text-[11px] font-black uppercase tracking-[0.2em]">Cota da Organização (50%)</span>
+                        <div className="bg-[#0f1115]/90 backdrop-blur-xl border border-slate-700/40 rounded-[2rem] p-8 text-left mb-8 space-y-6 relative shadow-inner group/card hover:border-brand-purple/40 transition-all">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3 text-brand-gold gold-glow">
+                                    <Crown className="w-6 h-6" />
+                                    <span className="text-[12px] font-black uppercase tracking-[0.3em]">Cota D'LA Norte</span>
+                                </div>
+                                <span className="bg-brand-purple/20 text-brand-purple px-3 py-1 rounded-full text-[9px] font-black tracking-widest">50% TAX</span>
                             </div>
                             
-                            <div className="space-y-3">
-                                <div className="flex justify-between items-center opacity-40">
-                                    <span className="text-[10px] font-black uppercase tracking-tight text-slate-400">Total Produzido</span>
-                                    <span className="text-xs font-mono font-bold text-white">{calculation.totalProduced}</span>
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-center opacity-30 group-hover/card:opacity-50 transition-opacity">
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Bruto</span>
+                                    <span className="text-sm font-mono font-bold text-white">{calculation.totalProduced}</span>
                                 </div>
-                                <div className="flex justify-between items-center text-slate-500 border-b border-slate-800/50 pb-3 italic">
-                                    <span className="text-[10px] font-bold uppercase tracking-tight">Taxa Operacional</span>
-                                    <span className="text-xs font-mono font-bold">-{calculation.totalProduced * 0.5}</span>
+                                <div className="flex justify-between items-center text-slate-500 border-b border-white/5 pb-5 italic">
+                                    <span className="text-[9px] font-bold uppercase tracking-widest">Taxa Operacional</span>
+                                    <span className="text-sm font-mono font-bold">-{calculation.totalProduced * 0.5}</span>
                                 </div>
                                 <div className="pt-2 flex justify-between items-center">
                                     <div className="flex flex-col">
-                                        <span className="text-[11px] font-black uppercase tracking-widest text-brand-purple">Saldo do Membro</span>
-                                        <span className="text-[8px] text-slate-600 font-bold uppercase tracking-tighter">Líquido a receber</span>
+                                        <span className="text-[12px] font-black uppercase tracking-widest text-brand-purple leading-tight">Crédito Membro</span>
+                                        <span className="text-[8px] text-slate-600 font-bold uppercase tracking-tight">Saldo Líquido</span>
                                     </div>
-                                    <span className="text-4xl font-black text-white font-mono drop-shadow-[0_0_15px_rgba(124,58,237,0.4)] tracking-tighter">
+                                    <span className="text-5xl font-black text-white font-mono tracking-tighter text-metallic drop-shadow-2xl">
                                         {(calculation.totalProduced * 0.5).toLocaleString()}
                                     </span>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="mt-4 inline-flex items-center px-5 py-2.5 bg-brand-purple/10 border border-brand-purple/30 rounded-2xl text-brand-purple font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-purple-500/5">
-                            <Package className="w-4 h-4 mr-2" />
-                            {calculation.batches} Ciclos de Extração
+                        <div className="inline-flex items-center px-6 py-3 bg-brand-purple/5 border border-brand-purple/20 rounded-2xl text-brand-purple/60 font-black text-[10px] uppercase tracking-[0.3em] backdrop-blur-sm group-hover:bg-brand-purple/10 transition-all">
+                            <Package className="w-4 h-4 mr-3 opacity-50" />
+                            {calculation.batches} Lotes de {BATCH_SIZE}u
                         </div>
                       </div>
                       
-                      <div className="w-full pt-10 border-t border-slate-800/50 relative z-10 text-left">
-                        <h4 className="text-[10px] font-black text-slate-600 uppercase mb-5 tracking-[0.3em] flex items-center justify-between">
-                            Metricas de Eficiência
-                            <span className="font-mono text-brand-purple/40">D'LA NORTE v3.0</span>
+                      <div className="w-full pt-12 border-t border-slate-800/60 relative z-10 text-left overflow-hidden">
+                        <div className="absolute top-0 right-0 py-10 opacity-5 group-hover:opacity-10 transition-opacity">
+                            <Crown className="w-20 h-20 text-brand-silver rotate-12" />
+                        </div>
+
+                        <h4 className="text-[9px] font-black text-slate-600 uppercase mb-6 tracking-[0.5em] flex items-center justify-between">
+                            Metricas Operacionais
+                            <span className="font-mono text-brand-purple/30">V.3.1.2</span>
                         </h4>
                         
-                        <div className="grid grid-cols-2 gap-x-6 gap-y-5 mb-8">
+                        <div className="grid grid-cols-2 gap-x-8 gap-y-6 mb-10">
                             {(Object.keys(REQUIREMENTS) as ItemKey[]).map((key) => (
-                                <div key={key} className="space-y-1.5 group">
-                                    <div className="flex justify-between text-[9px] font-black uppercase tracking-widest text-slate-500 group-hover:text-slate-400 transition-colors">
+                                <div key={key} className="space-y-2 group/metric">
+                                    <div className="flex justify-between text-[8px] font-black uppercase tracking-widest text-slate-500 group-hover/metric:text-white transition-colors">
                                         <span>{ITEM_NAMES[key]}</span>
-                                        <span className="text-brand-purple/80 italic">U: {calculation.needed[key]}</span>
+                                        <span className="text-brand-purple font-mono font-bold">U: {calculation.needed[key]}</span>
                                     </div>
-                                    <div className="flex justify-between items-baseline">
-                                        <span className={`text-xs font-mono font-bold ${calculation.surplus[key] > 0 ? 'text-brand-gold' : 'text-slate-800'}`}>
-                                            +{calculation.surplus[key]} EXC
+                                    <div className="flex justify-between items-baseline gap-2">
+                                        <span className={`text-[11px] font-mono font-bold ${calculation.surplus[key] > 0 ? 'text-brand-gold' : 'text-slate-800'}`}>
+                                            +{calculation.surplus[key]} <span className="text-[9px] opacity-40">EXC</span>
                                         </span>
                                         {calculation.missing[key] > 0 && (
-                                            <span className="text-[9px] font-black text-brand-purple uppercase bg-brand-purple/10 px-1.5 py-0.5 rounded italic">-{calculation.missing[key]}</span>
+                                            <span className="text-[9px] font-black text-white bg-brand-purple px-2 py-0.5 rounded-lg italic tracking-tighter">-{calculation.missing[key]}</span>
                                         )}
+                                    </div>
+                                    <div className="w-full bg-slate-900/50 h-0.5 rounded-full overflow-hidden">
+                                        <div 
+                                          className={`h-full transition-all duration-700 ${calculation.limitingFactors.includes(key) ? 'bg-brand-purple shadow-[0_0_5px_#7c3aed]' : 'bg-slate-800'}`}
+                                          style={{ width: `${Math.min(100, (parseInt(quantities[key]) || 0) / calculation.needed[key] * 100)}%` }}
+                                        ></div>
                                     </div>
                                 </div>
                             ))}
                         </div>
 
-                        <div className="space-y-5 pt-6 border-t border-slate-800/50">
-                          <div className="flex items-center justify-between w-full">
-                            <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Próxima Meta (100u):</span>
-                            <span className="text-xs font-mono font-black text-brand-gold bg-brand-gold/5 px-3 py-1.5 rounded-xl border border-brand-gold/20">
-                                +{calculation.nextBatchMissing[calculation.mainBottleneck]} {ITEM_NAMES[calculation.mainBottleneck]}
-                            </span>
-                          </div>
-                          
-                          <div className="space-y-2">
-                             <div className="w-full bg-slate-900 h-2.5 rounded-full overflow-hidden border border-white/5 p-0.5">
-                                <motion.div 
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${Math.min(100, (parseInt(quantities[calculation.mainBottleneck]) % REQUIREMENTS[calculation.mainBottleneck]) / REQUIREMENTS[calculation.mainBottleneck] * 100)}%` }}
-                                    className="bg-brand-purple h-full rounded-full shadow-[0_0_15px_rgba(124,58,237,0.8)]"
-                                ></motion.div>
-                              </div>
-                              <p className="text-[10px] text-slate-600 leading-relaxed font-bold uppercase tracking-tight">
-                                GARGALO ATUAL: <span className="text-brand-purple">{ITEM_NAMES[calculation.mainBottleneck]}</span>
-                              </p>
+                        <div className="space-y-6 pt-8 border-t border-slate-800/40">
+                          <div className="flex items-center justify-between gap-4">
+                            <div className="space-y-1">
+                                <span className="text-[9px] text-slate-500 font-black uppercase tracking-[0.3em] block">Próxima Meta (+100u)</span>
+                                <p className="text-[10px] text-slate-400 leading-tight font-bold uppercase italic">
+                                  Requer: <span className="text-brand-gold">{ITEM_NAMES[calculation.mainBottleneck]}</span>
+                                </p>
+                            </div>
+                            <div className="px-5 py-3 bg-brand-gold/5 rounded-2xl border border-brand-gold/20 flex flex-col items-center group/next hover:bg-brand-gold/10 transition-colors">
+                                <span className="text-xs font-mono font-black text-brand-gold gold-glow">+{calculation.nextBatchMissing[calculation.mainBottleneck]}u</span>
+                                <span className="text-[7px] text-brand-gold/50 font-black uppercase tracking-tighter">Faltante</span>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -480,15 +502,21 @@ export default function App() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="flex-1 bg-[#161b22]/30 rounded-3xl border-2 border-dashed border-slate-800 p-10 flex flex-col items-center justify-center text-center group"
+                        className="flex-1 glass-card rounded-[2.5rem] border-2 border-dashed border-slate-800/40 p-12 flex flex-col items-center justify-center text-center group"
                     >
-                        <div className="w-20 h-20 bg-slate-800/50 rounded-3xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500">
-                            <Box className="w-10 h-10 text-slate-700" />
+                        <div className="w-24 h-24 bg-slate-800/20 rounded-[2rem] flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-700 border border-white/[0.02]">
+                            <Package className="w-10 h-10 text-slate-700 opacity-40 group-hover:text-brand-purple transition-colors" />
                         </div>
-                        <h4 className="text-white font-bold mb-2 uppercase tracking-widest">Aguardando Insumos</h4>
-                        <p className="text-slate-500 text-xs max-w-[200px] leading-relaxed mx-auto">
-                            O sistema está em standby. Insira os dados de coleta para processar a viabilidade da remessa.
+                        <h4 className="text-white text-lg font-black mb-3 uppercase tracking-[0.4em] italic text-metallic opacity-80">Standby</h4>
+                        <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest max-w-[240px] leading-relaxed mx-auto opacity-60 group-hover:opacity-100 transition-opacity">
+                            Aguardando inteligência de insumos para viabilizar processamento.
                         </p>
+                        
+                        <div className="mt-10 flex gap-2">
+                           {[1, 2, 3].map(i => (
+                             <div key={i} className="w-1.5 h-1.5 rounded-full bg-slate-800 group-hover:bg-brand-purple/20 transition-colors" style={{ transitionDelay: `${i*100}ms` }}></div>
+                           ))}
+                        </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
