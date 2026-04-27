@@ -15,7 +15,12 @@ import {
   ChevronRight,
   RefreshCw,
   AlertCircle,
-  Crown
+  Crown,
+  Scale,
+  TrendingUp,
+  ShieldCheck,
+  Zap,
+  Settings2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -33,6 +38,15 @@ const ITEM_NAMES = {
   paper: 'Folha de Papel',
   plastic: 'Embalagem Plástica',
   ephedrine: 'Efedrina',
+  product: 'Metanfetamina',
+};
+
+const DEFAULT_WEIGHTS = {
+  aluminum: 0.15,
+  paper: 0.3,
+  plastic: 0.15,
+  ephedrine: 0.15,
+  product: 0.15,
 };
 
 const ITEM_ICONS = {
@@ -55,6 +69,40 @@ export default function App() {
   const [lastEditedKey, setLastEditedKey] = useState<ItemKey | null>(null);
 
   const [activeInput, setActiveInput] = useState<ItemKey | 'none'>('none');
+  const [weights, setWeights] = useState<Record<ItemKey | 'product', number>>(DEFAULT_WEIGHTS);
+
+  // Sales Calculator State
+  const [showSales, setShowSales] = useState(false);
+  const [saleUnits, setSaleUnits] = useState<string>('');
+  const [salePrice, setSalePrice] = useState(150);
+  const [isVapo, setIsVapo] = useState(false);
+
+  // Sales Config
+  const [salesConfig, setSalesConfig] = useState({
+    orgMin: 130,
+    orgMax: 150,
+    vapoMin: 150,
+    vapoMax: 200,
+    vapoLimit: 500
+  });
+
+  const totalPrice = (parseInt(saleUnits) || 0) * salePrice;
+  const isVapoOverLimit = isVapo && (parseInt(saleUnits) || 0) > salesConfig.vapoLimit;
+
+  useEffect(() => {
+    // Sync price when switching types
+    if (isVapo) {
+      if (salePrice < salesConfig.vapoMin) setSalePrice(salesConfig.vapoMin);
+    } else {
+      if (salePrice > salesConfig.orgMax) setSalePrice(salesConfig.orgMax);
+    }
+  }, [isVapo]);
+
+  const adjustPrice = (delta: number) => {
+    const min = isVapo ? salesConfig.vapoMin : salesConfig.orgMin;
+    const max = isVapo ? salesConfig.vapoMax : salesConfig.orgMax;
+    setSalePrice(prev => Math.min(max, Math.max(min, prev + delta)));
+  };
 
   const applyBatchesPreset = (num: number) => {
     const nextQuantities = (Object.keys(REQUIREMENTS) as ItemKey[]).reduce((acc, k) => {
@@ -191,6 +239,13 @@ export default function App() {
 
     const mainBottleneck = limitingFactors[0];
 
+    const totalInputWeight = (Object.keys(REQUIREMENTS) as ItemKey[]).reduce((acc, key) => {
+      return acc + (parseInt(quantities[key]) || 0) * weights[key];
+    }, 0);
+
+    const totalOutputWeight = totalProduced * weights.product;
+    const memberOutputWeight = totalOutputWeight * 0.5;
+
     return {
       batches,
       totalProduced,
@@ -200,9 +255,12 @@ export default function App() {
       limitingFactors,
       nextBatchMissing,
       mainBottleneck,
-      isTargetMode
+      isTargetMode,
+      totalInputWeight,
+      totalOutputWeight,
+      memberOutputWeight
     };
-  }, [quantities]);
+  }, [quantities, weights]);
 
   return (
     <div className="min-h-screen bg-[#0f1115] text-slate-200 font-sans flex flex-col selection:bg-brand-purple/30 bg-camo">
@@ -236,26 +294,148 @@ export default function App() {
 
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* Sidebar: Recipe Info */}
-        <aside className="w-full md:w-80 glass-card p-8 flex flex-col shrink-0 overflow-y-auto">
-          <h2 className="text-[10px] font-black text-slate-500 uppercase mb-8 tracking-[0.3em] flex items-center gap-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-brand-purple shadow-[0_0_8px_#7c3aed]"></div>
-            Insumos por Lote (100u)
-          </h2>
-          <div className="space-y-3 mb-8">
-            {(Object.keys(REQUIREMENTS) as ItemKey[]).map((key) => {
-              const Icon = ITEM_ICONS[key];
-              return (
-                <div key={key} className="flex items-center justify-between p-4 bg-[#0f1115]/50 border border-slate-800/40 rounded-2xl group hover:border-brand-purple/30 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <Icon className="w-4 h-4 text-slate-600 group-hover:text-brand-purple transition-colors" />
-                    <span className="text-[11px] font-bold text-slate-400 group-hover:text-white transition-colors uppercase tracking-tight">{ITEM_NAMES[key]}</span>
-                  </div>
-                  <span className="font-mono text-brand-purple/60 font-black text-xs tracking-widest group-hover:text-brand-purple">{REQUIREMENTS[key]}u</span>
-                </div>
-              );
-            })}
-          </div>
+        <aside className="w-full md:w-80 glass-card p-8 flex flex-col shrink-0 overflow-y-auto border-r border-slate-800/20">
           
+          {/* Mode Navigation */}
+          <div className="flex gap-1 bg-slate-900/50 p-1 rounded-2xl border border-slate-800 mb-8">
+            <button 
+              onClick={() => setShowSales(false)}
+              className={`flex-1 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex flex-col items-center gap-1 ${!showSales ? 'bg-brand-purple text-white shadow-lg' : 'text-slate-500 hover:text-slate-400'}`}
+            >
+              <FlaskConical className="w-3.5 h-3.5" />
+              Processo
+            </button>
+            <button 
+              onClick={() => setShowSales(true)}
+              className={`flex-1 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex flex-col items-center gap-1 ${showSales ? 'bg-brand-purple text-white shadow-lg' : 'text-slate-500 hover:text-slate-400'}`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              Gestão
+            </button>
+          </div>
+
+          <AnimatePresence mode="wait">
+            {!showSales ? (
+              <motion.div
+                key="prod-sidebar"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                className="space-y-8"
+              >
+                <div className="space-y-4">
+                  <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-brand-purple shadow-[0_0_8px_#7c3aed]"></div>
+                    Insumos por Lote (100u)
+                  </h2>
+                  <div className="space-y-3">
+                    {(Object.keys(REQUIREMENTS) as ItemKey[]).map((key) => {
+                      const Icon = ITEM_ICONS[key];
+                      return (
+                        <div key={key} className="flex items-center justify-between p-4 bg-[#0f1115]/50 border border-slate-800/40 rounded-2xl group hover:border-brand-purple/30 transition-colors">
+                          <div className="flex items-center gap-3">
+                            <Icon className="w-4 h-4 text-slate-600 group-hover:text-brand-purple transition-colors" />
+                            <span className="text-[11px] font-bold text-slate-400 group-hover:text-white transition-colors uppercase tracking-tight">{ITEM_NAMES[key]}</span>
+                          </div>
+                          <span className="font-mono text-brand-purple/60 font-black text-xs tracking-widest group-hover:text-brand-purple">{REQUIREMENTS[key]}u</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="pt-8 border-t border-slate-800/40">
+                  <h3 className="text-[10px] font-black text-slate-500 uppercase mb-6 tracking-[0.3em] flex items-center gap-2">
+                    <Scale className="w-3 h-3 text-brand-purple" />
+                    Calibração de Peso
+                  </h3>
+                  <div className="space-y-4">
+                    {(Object.keys(weights) as (ItemKey | 'product')[]).map((key) => (
+                      <div key={key} className="flex flex-col gap-1.5">
+                        <div className="flex justify-between items-center px-1">
+                          <span className="text-[9px] font-black text-slate-600 uppercase tracking-tight">
+                            {ITEM_NAMES[key]}
+                          </span>
+                          <span className="text-[10px] font-mono font-bold text-brand-purple/80">
+                            {weights[key].toFixed(2)}kg
+                          </span>
+                        </div>
+                        <input 
+                          type="range"
+                          min="0.01"
+                          max="1.0"
+                          step="0.01"
+                          value={weights[key]}
+                          onChange={(e) => setWeights(prev => ({ ...prev, [key]: parseFloat(e.target.value) }))}
+                          className="w-full accent-brand-purple h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="sales-sidebar"
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 10 }}
+                className="space-y-8"
+              >
+                <div className="pt-2">
+                  <h3 className="text-[10px] font-black text-slate-500 uppercase mb-6 tracking-[0.3em] flex items-center gap-2">
+                    <Settings2 className="w-3 h-3 text-brand-purple" />
+                    Ajustes de Mercado
+                  </h3>
+                  <div className="space-y-6">
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center group">
+                        <span className="text-[8px] font-black text-slate-600 uppercase tracking-tighter">Preço Org (Min/Max)</span>
+                        <div className="flex gap-1 text-[10px] font-mono font-bold text-slate-400">
+                          <span>{salesConfig.orgMin}</span>/<span>{salesConfig.orgMax}</span>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                         <input type="number" value={salesConfig.orgMin} onChange={e => setSalesConfig(p => ({...p, orgMin: parseInt(e.target.value)}))} className="bg-slate-900 border border-slate-800 rounded p-1 text-[10px] text-white outline-none focus:border-brand-purple/50 w-full" />
+                         <input type="number" value={salesConfig.orgMax} onChange={e => setSalesConfig(p => ({...p, orgMax: parseInt(e.target.value)}))} className="bg-slate-900 border border-slate-800 rounded p-1 text-[10px] text-white outline-none focus:border-brand-purple/50 w-full" />
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center group">
+                        <span className="text-[8px] font-black text-slate-600 uppercase tracking-tighter">Preço VAPO (Min/Max)</span>
+                        <div className="flex gap-1 text-[10px] font-mono font-bold text-slate-400">
+                          <span>{salesConfig.vapoMin}</span>/<span>{salesConfig.vapoMax}</span>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                         <input type="number" value={salesConfig.vapoMin} onChange={e => setSalesConfig(p => ({...p, vapoMin: parseInt(e.target.value)}))} className="bg-slate-900 border border-slate-800 rounded p-1 text-[10px] text-white outline-none focus:border-brand-purple/50 w-full" />
+                         <input type="number" value={salesConfig.vapoMax} onChange={e => setSalesConfig(p => ({...p, vapoMax: parseInt(e.target.value)}))} className="bg-slate-900 border border-slate-800 rounded p-1 text-[10px] text-white outline-none focus:border-brand-purple/50 w-full" />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[8px] font-black text-slate-600 uppercase tracking-tighter">Limite Unidades VAPO</span>
+                        <span className="text-[10px] font-mono font-bold text-slate-400">{salesConfig.vapoLimit}u</span>
+                      </div>
+                      <input 
+                        type="range" min="100" max="2000" step="50" value={salesConfig.vapoLimit} 
+                        onChange={(e) => setSalesConfig(prev => ({ ...prev, vapoLimit: parseInt(e.target.value) }))}
+                        className="w-full accent-brand-purple h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-brand-purple/5 border border-brand-purple/10 rounded-2xl">
+                  <p className="text-[9px] font-black text-brand-purple uppercase tracking-widest mb-2">Relatório de Gestão</p>
+                  <p className="text-[10px] text-slate-500 italic">Preços são ajustados dinamicamente com base nas diretrizes do comando.</p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <div className="mt-auto p-6 bg-brand-purple/5 border border-brand-purple/20 rounded-3xl relative overflow-hidden group">
             <div className="absolute -top-4 -right-4 opacity-5 group-hover:opacity-10 group-hover:-rotate-12 transition-all duration-500">
                 <Crown className="w-24 h-24 text-brand-gold" />
@@ -272,256 +452,400 @@ export default function App() {
 
         {/* Main Content */}
         <main className="flex-1 p-6 lg:p-10 overflow-y-auto relative">
-          <div className="max-w-5xl mx-auto h-full">
-            <div className="grid grid-cols-1 xl:grid-cols-[1fr,400px] gap-10">
-              
-              {/* Inputs */}
-              <section className="space-y-10">
-                <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 border-b border-slate-800/60 pb-8">
-                  <div className="space-y-1">
-                    <h1 className="text-4xl font-black text-white italic tracking-tighter uppercase text-metallic">Operação</h1>
-                    <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Gerenciamento de recursos</p>
-                  </div>
-                  
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-1 bg-[#161b22] px-2 py-1.5 rounded-xl border border-slate-800">
-                      <button 
-                        onClick={() => adjustBatches(-1)}
-                        className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-brand-purple/10 text-brand-purple/60 hover:text-brand-purple transition-all active:scale-90"
-                      >
-                        -
-                      </button>
-                      <div className="px-4 text-center min-w-[70px]">
-                        <p className="text-[7px] font-black text-slate-600 uppercase tracking-tighter">Ciclos</p>
-                        <p className="text-sm font-mono font-black text-brand-purple">{calculation?.batches || 0}</p>
-                      </div>
-                      <button 
-                        onClick={() => adjustBatches(1)}
-                        className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-brand-purple/10 text-brand-purple/60 hover:text-brand-purple transition-all active:scale-90"
-                      >
-                        +
-                      </button>
+          <div className="max-w-5xl mx-auto h-full space-y-8">
+            <AnimatePresence mode="wait">
+              {showSales ? (
+                <motion.div 
+                  key="sales"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="grid grid-cols-1 xl:grid-cols-[1fr,400px] gap-10"
+                >
+                  {/* Sales Inputs */}
+                  <section className="space-y-10">
+                    <div className="space-y-1 border-b border-slate-800/60 pb-8">
+                      <h2 className="text-4xl font-black text-white italic tracking-tighter uppercase text-metallic">Faturamento</h2>
+                      <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Módulo exclusivo de gerência</p>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                       {[1, 5, 10].map(n => (
-                         <button
-                           key={n}
-                           onClick={() => applyBatchesPreset(n)}
-                           className="px-4 py-3 bg-[#161b22] border border-slate-800 rounded-xl text-[10px] font-black text-slate-500 uppercase tracking-widest hover:border-brand-purple hover:text-brand-purple transition-all active:scale-95"
-                         >
-                           {n}F
-                         </button>
-                       ))}
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-8 gap-x-6">
-                  {(Object.keys(REQUIREMENTS) as ItemKey[]).map((key) => {
-                    const isMissing = calculation && calculation.missing[key] > 0;
-                    const hasValue = quantities[key] !== '';
-                    const isLimiting = calculation?.limitingFactors.includes(key);
-
-                    return (
-                      <div key={key} className="group">
-                        <label className="text-[9px] uppercase font-black text-slate-500 tracking-[0.2em] flex justify-between items-center px-1 mb-3">
-                          <span className="flex items-center gap-1.5">
-                            <span className={`w-1 h-1 rounded-full ${hasValue ? 'bg-brand-purple shadow-[0_0_5px_#7c3aed]' : 'bg-slate-800'}`}></span>
-                            {ITEM_NAMES[key]}
-                          </span>
-                          {isLimiting && calculation && calculation.batches > 0 && (
-                              <span className="text-brand-gold flex items-center gap-1 font-black italic scale-90">
-                                  <Crown className="w-3 h-3 gold-glow" />
-                                  GARGALO
-                              </span>
-                          )}
-                        </label>
-                        <div className="relative">
-                          <input 
-                              type="text" 
-                              inputMode="numeric"
-                              value={quantities[key]}
-                              onFocus={() => setActiveInput(key)}
-                              onBlur={() => setActiveInput('none')}
-                              onChange={(e) => handleInputChange(key, e.target.value)}
-                              placeholder="0"
-                              className={`w-full bg-[#161b22]/60 backdrop-blur-sm border p-7 rounded-3xl text-3xl font-mono text-white outline-none transition-all placeholder:text-slate-800/50 ${
-                                  activeInput === key 
-                                  ? 'border-brand-purple ring-8 ring-brand-purple/5 shadow-2xl scale-[1.02]' 
-                                  : isMissing
-                                  ? 'border-brand-purple/20'
-                                  : 'border-slate-800 focus:border-brand-purple/50'
-                              }`}
-                          />
-                          {hasValue && (
-                            <div className="absolute right-6 top-1/2 -translate-y-1/2 opacity-30 capitalize text-[8px] font-black text-slate-500 pointer-events-none tracking-[0.2em] flex flex-col items-end">
-                                <span>UNIDADES</span>
-                                <span className="text-[7px] text-brand-purple mt-0.5">{manuallyEdited.has(key) ? 'COORDENADO' : 'AUTO-CALC'}</span>
-                            </div>
-                          )}
+                    <div className="grid grid-cols-1 gap-10">
+                      {/* Sale Type Toggle */}
+                      <div className="space-y-4">
+                        <label className="text-[10px] uppercase font-black text-slate-500 tracking-[0.2em] px-1">Modalidade de Venda</label>
+                        <div className="grid grid-cols-2 gap-4">
+                          <button 
+                            onClick={() => setIsVapo(false)}
+                            className={`p-6 rounded-3xl border transition-all flex flex-col items-center gap-3 ${!isVapo ? 'bg-brand-purple/10 border-brand-purple shadow-2xl' : 'bg-[#161b22]/40 border-slate-800 opacity-50'}`}
+                          >
+                            <TrendingUp className={`w-6 h-6 ${!isVapo ? 'text-brand-purple' : 'text-slate-600'}`} />
+                            <span className="text-[10px] font-black uppercase tracking-widest">Organização</span>
+                          </button>
+                          <button 
+                            onClick={() => setIsVapo(true)}
+                            className={`p-6 rounded-3xl border transition-all flex flex-col items-center gap-3 ${isVapo ? 'bg-brand-purple/10 border-brand-purple shadow-2xl' : 'bg-[#161b22]/40 border-slate-800 opacity-50'}`}
+                          >
+                            <Zap className={`w-6 h-6 ${isVapo ? 'text-brand-purple' : 'text-slate-600'}`} />
+                            <span className="text-[10px] font-black uppercase tracking-widest">VAPO</span>
+                          </button>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
 
-                <div className="flex items-center gap-4 p-5 bg-white/[0.02] border border-dashed border-slate-800 rounded-3xl opacity-50">
-                    <Info className="w-5 h-5 text-slate-600 shrink-0" />
-                    <p className="text-[10px] text-slate-500 leading-relaxed font-bold uppercase tracking-tight">
-                        Sistema recalcula automaticamente baseado no insumo limitante ou no preset selecionado.
-                    </p>
-                </div>
-              </section>
+                      {/* Units Input */}
+                      <div className="space-y-4">
+                        <label className="text-[10px] uppercase font-black text-slate-500 tracking-[0.2em] px-1 flex justify-between">
+                          Quantidade de Venda
+                          {isVapoOverLimit && <span className="text-brand-gold animate-pulse italic">LIMITE VAPO EXCEDIDO!</span>}
+                        </label>
+                        <input 
+                          type="text" inputMode="numeric"
+                          value={saleUnits}
+                          onChange={(e) => setSaleUnits(e.target.value.replace(/\D/g, ''))}
+                          placeholder="0"
+                          className={`w-full bg-[#161b22]/60 backdrop-blur-sm border p-8 rounded-[2.5rem] text-5xl font-mono text-white outline-none transition-all placeholder:text-slate-800/50 ${isVapoOverLimit ? 'border-brand-gold ring-8 ring-brand-gold/5' : 'border-slate-800 focus:border-brand-purple'}`}
+                        />
+                      </div>
 
-              {/* Results */}
-              <section className="h-full">
-                <AnimatePresence mode="wait">
-                  {calculation ? (
-                    <motion.div 
-                        key="results"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        className="flex-1 glass-card rounded-[2.5rem] p-10 flex flex-col items-center justify-between text-center relative overflow-hidden group"
-                    >
-                      {/* Brand Pattern overlay */}
+                      {/* Price Control */}
+                      <div className="space-y-4">
+                        <label className="text-[10px] uppercase font-black text-slate-500 tracking-[0.2em] px-1">Ajuste de Preço Unitário</label>
+                        <div className="bg-[#161b22]/40 p-4 rounded-3xl border border-slate-800 flex items-center justify-between">
+                          <button onClick={() => adjustPrice(-5)} className="w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition-colors">-5</button>
+                          <div className="text-center">
+                            <span className="text-4xl font-mono font-black text-white px-8">${salePrice}</span>
+                            <p className="text-[8px] font-bold text-slate-600 uppercase tracking-widest mt-1">por unidade</p>
+                          </div>
+                          <button onClick={() => adjustPrice(5)} className="w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition-colors">+5</button>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+
+                  {/* Results Display */}
+                  <section>
+                    <div className="glass-card rounded-[2.5rem] p-10 flex flex-col items-center justify-between text-center relative overflow-hidden group min-h-[500px]">
                       <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(#7c3aed_2px,transparent_2px)] [background-size:24px_24px]"></div>
-
+                      
                       <div className="w-full flex justify-between items-center mb-6 relative z-10">
                         <div className="flex items-center gap-2 text-[9px] uppercase font-black text-slate-500 tracking-[0.3em]">
-                           <span className="w-2 h-2 rounded-full bg-brand-purple animate-pulse shadow-[0_0_12px_#7c3aed]"></span> 
-                           Processamento Ativo
+                           <span className="w-2 h-2 rounded-full bg-brand-purple animate-pulse"></span> 
+                           Financeiro
                         </div>
                         <div className="px-3 py-1 bg-brand-purple/10 border border-brand-purple/20 rounded-full text-[9px] font-mono text-brand-purple font-black">
-                           ID-EXEC: {Math.random().toString(16).slice(2, 8).toUpperCase()}
+                           TYPE: {isVapo ? 'VAPO' : 'ORG'}
                         </div>
                       </div>
 
-                      <div className="relative z-10 py-4 w-full group/main">
-                        <h3 className="text-slate-600 uppercase text-[9px] font-black tracking-[0.6em] mb-4 group-hover/main:text-brand-purple/60 transition-colors">Produção Teórica</h3>
-                        <div className="text-9xl font-black text-white font-mono tracking-tighter leading-none mb-3 tabular-nums drop-shadow-[0_0_30px_rgba(255,255,255,0.05)] text-metallic">
-                            {calculation.totalProduced.toLocaleString()}
+                      <div className="relative z-10 py-10 w-full group/main">
+                        <h3 className="text-slate-600 uppercase text-[9px] font-black tracking-[0.6em] mb-6">Total do Carregamento</h3>
+                        <div className="text-7xl font-black text-white font-mono tracking-tighter leading-none mb-4 tabular-nums text-metallic">
+                            ${totalPrice.toLocaleString()}
                         </div>
-                        <div className="text-brand-purple font-black text-xs uppercase tracking-[0.4em] italic mb-10 flex items-center justify-center gap-3 opacity-80">
-                            <Box className="w-4 h-4" />
-                            Unidades Purificadas
-                        </div>
-                        
-                        {/* Tax Breakdown Disclaimer */}
-                        <div className="bg-[#0f1115]/90 backdrop-blur-xl border border-slate-700/40 rounded-[2rem] p-8 text-left mb-8 space-y-6 relative shadow-inner group/card hover:border-brand-purple/40 transition-all">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3 text-brand-gold gold-glow">
-                                    <Crown className="w-6 h-6" />
-                                    <span className="text-[12px] font-black uppercase tracking-[0.3em]">Cota D'LA Norte</span>
-                                </div>
-                                <span className="bg-brand-purple/20 text-brand-purple px-3 py-1 rounded-full text-[9px] font-black tracking-widest">50% TAX</span>
-                            </div>
-                            
-                            <div className="space-y-4">
-                                <div className="flex justify-between items-center opacity-30 group-hover/card:opacity-50 transition-opacity">
-                                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Bruto</span>
-                                    <span className="text-sm font-mono font-bold text-white">{calculation.totalProduced}</span>
-                                </div>
-                                <div className="flex justify-between items-center text-slate-500 border-b border-white/5 pb-5 italic">
-                                    <span className="text-[9px] font-bold uppercase tracking-widest">Taxa Operacional</span>
-                                    <span className="text-sm font-mono font-bold">-{calculation.totalProduced * 0.5}</span>
-                                </div>
-                                <div className="pt-2 flex justify-between items-center">
-                                    <div className="flex flex-col">
-                                        <span className="text-[12px] font-black uppercase tracking-widest text-brand-purple leading-tight">Crédito Membro</span>
-                                        <span className="text-[8px] text-slate-600 font-bold uppercase tracking-tight">Saldo Líquido</span>
-                                    </div>
-                                    <span className="text-5xl font-black text-white font-mono tracking-tighter text-metallic drop-shadow-2xl">
-                                        {(calculation.totalProduced * 0.5).toLocaleString()}
-                                    </span>
-                                </div>
-                            </div>
+                        <div className="text-brand-purple font-black text-xs uppercase tracking-[0.4em] italic mb-10 flex items-center justify-center gap-3">
+                            Pagamento Imediato
                         </div>
 
-                        <div className="inline-flex items-center px-6 py-3 bg-brand-purple/5 border border-brand-purple/20 rounded-2xl text-brand-purple/60 font-black text-[10px] uppercase tracking-[0.3em] backdrop-blur-sm group-hover:bg-brand-purple/10 transition-all">
-                            <Package className="w-4 h-4 mr-3 opacity-50" />
-                            {calculation.batches} Lotes de {BATCH_SIZE}u
+                        <div className="bg-[#0f1115]/90 backdrop-blur-xl border border-slate-700/40 rounded-[2rem] p-8 text-left space-y-6 shadow-inner">
+                           <div className="space-y-4">
+                              <div className="flex justify-between items-center opacity-30">
+                                <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Peso Total Estimado</span>
+                                <span className="text-sm font-mono font-bold text-white text-brand-silver">{(parseInt(saleUnits) || 0) * (weights.product)}kg</span>
+                              </div>
+                              <div className="flex justify-between items-center text-slate-500 border-b border-white/5 pb-5 italic">
+                                <span className="text-[9px] font-bold uppercase tracking-widest">Preço Un.</span>
+                                <span className="text-sm font-mono font-bold text-brand-purple">${salePrice}</span>
+                              </div>
+                              <div className="pt-2 flex justify-between items-center">
+                                <div className="flex flex-col">
+                                    <span className="text-[12px] font-black uppercase tracking-widest text-brand-gold leading-tight">Valor Final</span>
+                                    <span className="text-[8px] text-slate-600 font-bold uppercase tracking-tight">Cobrança única</span>
+                                </div>
+                                <span className="text-5xl font-black text-white font-mono tracking-tighter text-metallic drop-shadow-2xl">
+                                    ${totalPrice.toLocaleString()}
+                                </span>
+                              </div>
+                           </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-auto flex items-center gap-3 text-[9px] font-black text-slate-600 uppercase tracking-widest opacity-40">
+                         <ShieldCheck className="w-4 h-4" />
+                         Controle Gerencial D'LA NORTE
+                      </div>
+                    </div>
+                  </section>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="production"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="grid grid-cols-1 xl:grid-cols-[1fr,400px] gap-10"
+                >
+                  {/* Inputs */}
+                  <section className="space-y-10">
+                    <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 border-b border-slate-800/60 pb-8">
+                      <div className="space-y-1">
+                        <h1 className="text-4xl font-black text-white italic tracking-tighter uppercase text-metallic">Operação</h1>
+                        <div className="flex items-center gap-3">
+                          <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Gerenciamento de recursos</p>
+                          {calculation && (
+                             <div className="flex items-center gap-1.5 px-2 py-0.5 bg-brand-purple/5 border border-brand-purple/10 rounded-lg">
+                               <Scale className="w-2.5 h-2.5 text-brand-purple/50" />
+                               <span className="text-[9px] font-mono font-bold text-brand-purple/80 uppercase">
+                                 {calculation.totalInputWeight.toFixed(1)}kg total
+                               </span>
+                             </div>
+                          )}
                         </div>
                       </div>
                       
-                      <div className="w-full pt-12 border-t border-slate-800/60 relative z-10 text-left overflow-hidden">
-                        <div className="absolute top-0 right-0 py-10 opacity-5 group-hover:opacity-10 transition-opacity">
-                            <Crown className="w-20 h-20 text-brand-silver rotate-12" />
-                        </div>
-
-                        <h4 className="text-[9px] font-black text-slate-600 uppercase mb-6 tracking-[0.5em] flex items-center justify-between">
-                            Metricas Operacionais
-                            <span className="font-mono text-brand-purple/30">V.3.1.2</span>
-                        </h4>
-                        
-                        <div className="grid grid-cols-2 gap-x-8 gap-y-6 mb-10">
-                            {(Object.keys(REQUIREMENTS) as ItemKey[]).map((key) => (
-                                <div key={key} className="space-y-2 group/metric">
-                                    <div className="flex justify-between text-[8px] font-black uppercase tracking-widest text-slate-500 group-hover/metric:text-white transition-colors">
-                                        <span>{ITEM_NAMES[key]}</span>
-                                        <span className="text-brand-purple font-mono font-bold">U: {calculation.needed[key]}</span>
-                                    </div>
-                                    <div className="flex justify-between items-baseline gap-2">
-                                        <span className={`text-[11px] font-mono font-bold ${calculation.surplus[key] > 0 ? 'text-brand-gold' : 'text-slate-800'}`}>
-                                            +{calculation.surplus[key]} <span className="text-[9px] opacity-40">EXC</span>
-                                        </span>
-                                        {calculation.missing[key] > 0 && (
-                                            <span className="text-[9px] font-black text-white bg-brand-purple px-2 py-0.5 rounded-lg italic tracking-tighter">-{calculation.missing[key]}</span>
-                                        )}
-                                    </div>
-                                    <div className="w-full bg-slate-900/50 h-0.5 rounded-full overflow-hidden">
-                                        <div 
-                                          className={`h-full transition-all duration-700 ${calculation.limitingFactors.includes(key) ? 'bg-brand-purple shadow-[0_0_5px_#7c3aed]' : 'bg-slate-800'}`}
-                                          style={{ width: `${Math.min(100, (parseInt(quantities[key]) || 0) / calculation.needed[key] * 100)}%` }}
-                                        ></div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="space-y-6 pt-8 border-t border-slate-800/40">
-                          <div className="flex items-center justify-between gap-4">
-                            <div className="space-y-1">
-                                <span className="text-[9px] text-slate-500 font-black uppercase tracking-[0.3em] block">Próxima Meta (+100u)</span>
-                                <p className="text-[10px] text-slate-400 leading-tight font-bold uppercase italic">
-                                  Requer: <span className="text-brand-gold">{ITEM_NAMES[calculation.mainBottleneck]}</span>
-                                </p>
-                            </div>
-                            <div className="px-5 py-3 bg-brand-gold/5 rounded-2xl border border-brand-gold/20 flex flex-col items-center group/next hover:bg-brand-gold/10 transition-colors">
-                                <span className="text-xs font-mono font-black text-brand-gold gold-glow">+{calculation.nextBatchMissing[calculation.mainBottleneck]}u</span>
-                                <span className="text-[7px] text-brand-gold/50 font-black uppercase tracking-tighter">Faltante</span>
-                            </div>
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1 bg-[#161b22] px-2 py-1.5 rounded-xl border border-slate-800">
+                          <button 
+                            onClick={() => adjustBatches(-1)}
+                            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-brand-purple/10 text-brand-purple/60 hover:text-brand-purple transition-all active:scale-90"
+                          >
+                            -
+                          </button>
+                          <div className="px-4 text-center min-w-[70px]">
+                            <p className="text-[7px] font-black text-slate-600 uppercase tracking-tighter">Ciclos</p>
+                            <p className="text-sm font-mono font-black text-brand-purple">{calculation?.batches || 0}</p>
                           </div>
+                          <button 
+                            onClick={() => adjustBatches(1)}
+                            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-brand-purple/10 text-brand-purple/60 hover:text-brand-purple transition-all active:scale-90"
+                          >
+                            +
+                          </button>
                         </div>
-                      </div>
-                    </motion.div>
-                  ) : (
-                    <motion.div 
-                        key="empty"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="flex-1 glass-card rounded-[2.5rem] border-2 border-dashed border-slate-800/40 p-12 flex flex-col items-center justify-center text-center group"
-                    >
-                        <div className="w-24 h-24 bg-slate-800/20 rounded-[2rem] flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-700 border border-white/[0.02]">
-                            <Package className="w-10 h-10 text-slate-700 opacity-40 group-hover:text-brand-purple transition-colors" />
-                        </div>
-                        <h4 className="text-white text-lg font-black mb-3 uppercase tracking-[0.4em] italic text-metallic opacity-80">Standby</h4>
-                        <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest max-w-[240px] leading-relaxed mx-auto opacity-60 group-hover:opacity-100 transition-opacity">
-                            Aguardando inteligência de insumos para viabilizar processamento.
-                        </p>
-                        
-                        <div className="mt-10 flex gap-2">
-                           {[1, 2, 3].map(i => (
-                             <div key={i} className="w-1.5 h-1.5 rounded-full bg-slate-800 group-hover:bg-brand-purple/20 transition-colors" style={{ transitionDelay: `${i*100}ms` }}></div>
+
+                        <div className="flex items-center gap-2">
+                           {[1, 5, 10].map(n => (
+                             <button
+                               key={n}
+                               onClick={() => applyBatchesPreset(n)}
+                               className="px-4 py-3 bg-[#161b22] border border-slate-800 rounded-xl text-[10px] font-black text-slate-500 uppercase tracking-widest hover:border-brand-purple hover:text-brand-purple transition-all active:scale-95"
+                             >
+                               {n}F
+                             </button>
                            ))}
                         </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </section>
-            </div>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-8 gap-x-6">
+                      {(Object.keys(REQUIREMENTS) as ItemKey[]).map((key) => {
+                        const isMissing = calculation && calculation.missing[key] > 0;
+                        const hasValue = quantities[key] !== '';
+                        const isLimiting = calculation?.limitingFactors.includes(key);
+
+                        return (
+                          <div key={key} className="group">
+                            <label className="text-[9px] uppercase font-black text-slate-500 tracking-[0.2em] flex justify-between items-center px-1 mb-3">
+                              <span className="flex items-center gap-1.5">
+                                <span className={`w-1 h-1 rounded-full ${hasValue ? 'bg-brand-purple shadow-[0_0_5px_#7c3aed]' : 'bg-slate-800'}`}></span>
+                                {ITEM_NAMES[key]}
+                              </span>
+                              {isLimiting && calculation && calculation.batches > 0 && (
+                                  <span className="text-brand-gold flex items-center gap-1 font-black italic scale-90">
+                                      <Crown className="w-3 h-3 gold-glow" />
+                                      GARGALO
+                                  </span>
+                              )}
+                            </label>
+                            <div className="relative">
+                              <input 
+                                  type="text" 
+                                  inputMode="numeric"
+                                  value={quantities[key]}
+                                  onFocus={() => setActiveInput(key)}
+                                  onBlur={() => setActiveInput('none')}
+                                  onChange={(e) => handleInputChange(key, e.target.value)}
+                                  placeholder="0"
+                                  className={`w-full bg-[#161b22]/60 backdrop-blur-sm border p-7 rounded-3xl text-3xl font-mono text-white outline-none transition-all placeholder:text-slate-800/50 ${
+                                      activeInput === key 
+                                      ? 'border-brand-purple ring-8 ring-brand-purple/5 shadow-2xl scale-[1.02]' 
+                                      : isMissing
+                                      ? 'border-brand-purple/20'
+                                      : 'border-slate-800 focus:border-brand-purple/50'
+                                  }`}
+                              />
+                              {hasValue && (
+                                <div className="absolute right-6 top-1/2 -translate-y-1/2 opacity-30 capitalize text-[8px] font-black text-slate-500 pointer-events-none tracking-[0.2em] flex flex-col items-end">
+                                    <span>UNIDADES</span>
+                                    <span className="text-[7px] text-brand-purple mt-0.5">{manuallyEdited.has(key) ? 'COORDENADO' : 'AUTO-CALC'}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="flex items-center gap-4 p-5 bg-white/[0.02] border border-dashed border-slate-800 rounded-3xl opacity-50">
+                        <Info className="w-5 h-5 text-slate-600 shrink-0" />
+                        <p className="text-[10px] text-slate-500 leading-relaxed font-bold uppercase tracking-tight">
+                            Sistema recalcula automaticamente baseado no insumo limitante ou no preset selecionado.
+                        </p>
+                    </div>
+                  </section>
+
+                  {/* Results */}
+                  <section className="h-full">
+                    <AnimatePresence mode="wait">
+                      {calculation ? (
+                        <motion.div 
+                            key="results"
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            className="flex-1 glass-card rounded-[2.5rem] p-10 flex flex-col items-center justify-between text-center relative overflow-hidden group"
+                        >
+                          <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(#7c3aed_2px,transparent_2px)] [background-size:24px_24px]"></div>
+
+                          <div className="w-full flex justify-between items-center mb-6 relative z-10">
+                            <div className="flex items-center gap-2 text-[9px] uppercase font-black text-slate-500 tracking-[0.3em]">
+                               <span className="w-2 h-2 rounded-full bg-brand-purple animate-pulse shadow-[0_0_12px_#7c3aed]"></span> 
+                               Processamento Ativo
+                            </div>
+                            <div className="px-3 py-1 bg-brand-purple/10 border border-brand-purple/20 rounded-full text-[9px] font-mono text-brand-purple font-black">
+                               ID-EXEC: {Math.random().toString(16).slice(2, 8).toUpperCase()}
+                            </div>
+                          </div>
+
+                          <div className="relative z-10 py-4 w-full group/main">
+                            <h3 className="text-slate-600 uppercase text-[9px] font-black tracking-[0.6em] mb-4 group-hover/main:text-brand-purple/60 transition-colors">Produção Teórica</h3>
+                            <div className="text-9xl font-black text-white font-mono tracking-tighter leading-none mb-3 tabular-nums drop-shadow-[0_0_30px_rgba(255,255,255,0.05)] text-metallic">
+                                {calculation.totalProduced.toLocaleString()}
+                            </div>
+                            <div className="text-brand-purple font-black text-xs uppercase tracking-[0.4em] italic mb-10 flex items-center justify-center gap-3 opacity-80">
+                                <Box className="w-4 h-4" />
+                                Unidades Purificadas
+                                <span className="text-[10px] text-slate-500 not-italic ml-2 border-l border-slate-800 pl-3">
+                                  PESO: {calculation.totalOutputWeight.toFixed(1)}kg
+                                </span>
+                            </div>
+                            
+                            <div className="bg-[#0f1115]/90 backdrop-blur-xl border border-slate-700/40 rounded-[2rem] p-8 text-left mb-8 space-y-6 relative shadow-inner group/card hover:border-brand-purple/40 transition-all">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3 text-brand-gold gold-glow">
+                                        <Crown className="w-6 h-6" />
+                                        <span className="text-[12px] font-black uppercase tracking-[0.3em]">Cota D'LA Norte</span>
+                                    </div>
+                                    <span className="bg-brand-purple/20 text-brand-purple px-3 py-1 rounded-full text-[9px] font-black tracking-widest">50% TAX</span>
+                                </div>
+                                
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center opacity-30 group-hover/card:opacity-50 transition-opacity">
+                                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Bruto</span>
+                                        <span className="text-sm font-mono font-bold text-white">{calculation.totalProduced}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-slate-500 border-b border-white/5 pb-5 italic">
+                                        <span className="text-[9px] font-bold uppercase tracking-widest">Taxa Operacional</span>
+                                        <span className="text-sm font-mono font-bold">-{calculation.totalProduced * 0.5}</span>
+                                    </div>
+                                    <div className="pt-2 flex justify-between items-center">
+                                        <div className="flex flex-col">
+                                            <span className="text-[12px] font-black uppercase tracking-widest text-brand-purple leading-tight">Crédito Membro</span>
+                                            <span className="text-[8px] text-slate-600 font-bold uppercase tracking-tight">Saldo Líquido ({calculation.memberOutputWeight.toFixed(1)}kg)</span>
+                                        </div>
+                                        <span className="text-5xl font-black text-white font-mono tracking-tighter text-metallic drop-shadow-2xl">
+                                            {(calculation.totalProduced * 0.5).toLocaleString()}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="inline-flex items-center px-6 py-3 bg-brand-purple/5 border border-brand-purple/20 rounded-2xl text-brand-purple/60 font-black text-[10px] uppercase tracking-[0.3em] backdrop-blur-sm group-hover:bg-brand-purple/10 transition-all">
+                                <Package className="w-4 h-4 mr-3 opacity-50" />
+                                {calculation.batches} Lotes de {BATCH_SIZE}u
+                            </div>
+                          </div>
+                          
+                          <div className="w-full pt-12 border-t border-slate-800/60 relative z-10 text-left overflow-hidden">
+                            <div className="absolute top-0 right-0 py-10 opacity-5 group-hover:opacity-10 transition-opacity">
+                                <Crown className="w-20 h-20 text-brand-silver rotate-12" />
+                            </div>
+
+                            <h4 className="text-[9px] font-black text-slate-600 uppercase mb-6 tracking-[0.5em] flex items-center justify-between">
+                                Metricas Operacionais
+                                <span className="font-mono text-brand-purple/30">V.3.1.2</span>
+                            </h4>
+                            
+                            <div className="grid grid-cols-2 gap-x-8 gap-y-6 mb-10">
+                                {(Object.keys(REQUIREMENTS) as ItemKey[]).map((key) => (
+                                    <div key={key} className="space-y-2 group/metric">
+                                        <div className="flex justify-between text-[8px] font-black uppercase tracking-widest text-slate-500 group-hover/metric:text-white transition-colors">
+                                            <span>{ITEM_NAMES[key]}</span>
+                                            <div className="flex items-center gap-2">
+                                              <span className="text-slate-600 font-mono">{( (parseInt(quantities[key]) || 0) * weights[key] ).toFixed(1)}kg</span>
+                                              <span className="text-brand-purple font-mono font-bold">U: {calculation.needed[key]}</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-between items-baseline gap-2">
+                                            <span className={`text-[11px] font-mono font-bold ${calculation.surplus[key] > 0 ? 'text-brand-gold' : 'text-slate-800'}`}>
+                                                +{calculation.surplus[key]} <span className="text-[9px] opacity-40">EXC</span>
+                                            </span>
+                                            {calculation.missing[key] > 0 && (
+                                                <span className="text-[9px] font-black text-white bg-brand-purple px-2 py-0.5 rounded-lg italic tracking-tighter">-{calculation.missing[key]}</span>
+                                            )}
+                                        </div>
+                                        <div className="w-full bg-slate-900/50 h-0.5 rounded-full overflow-hidden">
+                                            <div 
+                                              className={`h-full transition-all duration-700 ${calculation.limitingFactors.includes(key) ? 'bg-brand-purple shadow-[0_0_5px_#7c3aed]' : 'bg-slate-800'}`}
+                                              style={{ width: `${Math.min(100, (parseInt(quantities[key]) || 0) / calculation.needed[key] * 100)}%` }}
+                                            ></div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="space-y-6 pt-8 border-t border-slate-800/40">
+                              <div className="flex items-center justify-between gap-4">
+                                <div className="space-y-1">
+                                    <span className="text-[9px] text-slate-500 font-black uppercase tracking-[0.3em] block">Próxima Meta (+100u)</span>
+                                    <p className="text-[10px] text-slate-400 leading-tight font-bold uppercase italic">
+                                      Requer: <span className="text-brand-gold">{ITEM_NAMES[calculation.mainBottleneck]}</span>
+                                    </p>
+                                </div>
+                                <div className="px-5 py-3 bg-brand-gold/5 rounded-2xl border border-brand-gold/20 flex flex-col items-center group/next hover:bg-brand-gold/10 transition-colors">
+                                    <span className="text-xs font-mono font-black text-brand-gold gold-glow">+{calculation.nextBatchMissing[calculation.mainBottleneck]}u</span>
+                                    <span className="text-[7px] text-brand-gold/50 font-black uppercase tracking-tighter">Faltante</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      ) : (
+                        <motion.div 
+                            key="empty"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="flex-1 glass-card rounded-[2.5rem] border-2 border-dashed border-slate-800/40 p-12 flex flex-col items-center justify-center text-center group"
+                        >
+                            <div className="w-24 h-24 bg-slate-800/20 rounded-[2rem] flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-700 border border-white/[0.02]">
+                                <Package className="w-10 h-10 text-slate-700 opacity-40 group-hover:text-brand-purple transition-colors" />
+                            </div>
+                            <h4 className="text-white text-lg font-black mb-3 uppercase tracking-[0.4em] italic text-metallic opacity-80">Standby</h4>
+                            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest max-w-[240px] leading-relaxed mx-auto opacity-60 group-hover:opacity-100 transition-opacity">
+                                Aguardando inteligência de insumos para viabilizar processamento.
+                            </p>
+                            
+                            <div className="mt-10 flex gap-2">
+                               {[1, 2, 3].map(i => (
+                                 <div key={i} className="w-1.5 h-1.5 rounded-full bg-slate-800 group-hover:bg-brand-purple/20 transition-colors" style={{ transitionDelay: `${i*100}ms` }}></div>
+                               ))}
+                            </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </section>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </main>
       </div>
