@@ -445,7 +445,7 @@ export default function App() {
                Aviso do Comando
             </p>
             <span className="text-slate-400 italic text-[11px] leading-relaxed font-medium block">
-              Processamento em lotes de 100. Resíduos devem ser mantidos em estoque.
+              Processamento em lotes de 100. Resíduos e excessos devem ser descartados.
             </span>
           </div>
         </aside>
