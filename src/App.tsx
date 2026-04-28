@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   FlaskConical, 
   Package, 
@@ -21,7 +21,14 @@ import {
   ShieldCheck,
   Zap,
   Settings2,
-  X
+  X,
+  Plus,
+  Trash2,
+  Calendar,
+  Users,
+  History,
+  Clock,
+  MessageSquare
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -59,6 +66,21 @@ const ITEM_ICONS = {
 
 type ItemKey = keyof typeof REQUIREMENTS;
 
+interface Order {
+  id: string;
+  orgName: string;
+  buyerName: string;
+  quantity: number;
+  totalValue: number;
+  totalWeight: number;
+  recipients: string[];
+  requestDate: string;
+  deliveryDate: string;
+  createdAt: string;
+  status: 'Pendente' | 'Entregue' | 'Cancelado';
+  notes: { id: string; text: string; date: string }[];
+}
+
 export default function App() {
   const [quantities, setQuantities] = useState<Record<ItemKey, string>>({
     aluminum: '',
@@ -75,6 +97,12 @@ export default function App() {
   // Sales Calculator State
   const [showSales, setShowSales] = useState(false);
   const [showConfigModal, setShowConfigModal] = useState(false);
+  const [showOrderAgenda, setShowOrderAgenda] = useState(false);
+  const [orders, setOrders] = useState<Order[]>(() => {
+    const saved = localStorage.getItem('dla_norte_orders');
+    const parsed = saved ? JSON.parse(saved) : [];
+    return parsed.map((o: any) => ({ ...o, notes: o.notes || [] }));
+  });
   const [saleUnits, setSaleUnits] = useState<string>('');
   const [salePrice, setSalePrice] = useState(150);
   const [isVapo, setIsVapo] = useState(false);
@@ -89,7 +117,12 @@ export default function App() {
   });
 
   const totalPrice = (parseInt(saleUnits) || 0) * salePrice;
+  const totalWeight = (parseInt(saleUnits) || 0) * weights.product;
   const isVapoOverLimit = isVapo && (parseInt(saleUnits) || 0) > salesConfig.vapoLimit;
+
+  useEffect(() => {
+    localStorage.setItem('dla_norte_orders', JSON.stringify(orders));
+  }, [orders]);
 
   useEffect(() => {
     // Sync price when switching types
@@ -393,6 +426,21 @@ export default function App() {
                 className="space-y-6"
               >
                 <div className="pt-2">
+                  <div className="flex gap-1 bg-slate-900/50 p-1 rounded-xl border border-slate-800 mb-6">
+                    <button 
+                      onClick={() => setShowOrderAgenda(false)}
+                      className={`flex-1 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${!showOrderAgenda ? 'bg-brand-purple text-white' : 'text-slate-500 hover:text-slate-400'}`}
+                    >
+                      Calculadora
+                    </button>
+                    <button 
+                      onClick={() => setShowOrderAgenda(true)}
+                      className={`flex-1 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${showOrderAgenda ? 'bg-brand-purple text-white' : 'text-slate-500 hover:text-slate-400'}`}
+                    >
+                      Agenda
+                    </button>
+                  </div>
+
                   <h3 className="text-[9px] font-black text-slate-500 uppercase mb-4 tracking-[0.3em] flex items-center gap-2">
                     <Settings2 className="w-3 h-3 text-brand-purple" />
                     Ajustes de Mercado
@@ -446,7 +494,7 @@ export default function App() {
             )}
           </AnimatePresence>
 
-          <div className="mt-auto p-3 bg-brand-purple/5 border border-brand-purple/20 rounded-2xl relative overflow-hidden group">
+          <div className="mt-auto mt-6 p-3 bg-brand-purple/5 border border-brand-purple/20 rounded-2xl relative overflow-hidden group">
             <div className="absolute -top-3 -right-3 opacity-5 group-hover:opacity-10 group-hover:-rotate-12 transition-all duration-500">
                 <Crown className="w-16 h-16 text-brand-gold" />
             </div>
@@ -465,8 +513,16 @@ export default function App() {
           <div className="max-w-5xl mx-auto h-full space-y-3">
             <AnimatePresence mode="wait">
               {showSales ? (
-                <motion.div 
-                  key="sales"
+                showOrderAgenda ? (
+                  <OrderAgendaView 
+                    orders={orders} 
+                    setOrders={setOrders} 
+                    salesConfig={salesConfig} 
+                    weights={weights} 
+                  />
+                ) : (
+                  <motion.div 
+                    key="sales"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
@@ -585,7 +641,7 @@ export default function App() {
                     </div>
                   </section>
                 </motion.div>
-              ) : (
+              )) : (
                 <motion.div
                   key="production"
                   initial={{ opacity: 0, y: 10 }}
@@ -909,6 +965,23 @@ export default function App() {
                   </button>
                 </div>
 
+                {showSales && (
+                  <div className="flex gap-1 bg-slate-900/50 p-1 rounded-xl border border-slate-800">
+                    <button 
+                      onClick={() => setShowOrderAgenda(false)}
+                      className={`flex-1 py-2 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${!showOrderAgenda ? 'bg-brand-purple text-white shadow-lg' : 'text-slate-500 hover:text-slate-400'}`}
+                    >
+                      Calculadora
+                    </button>
+                    <button 
+                      onClick={() => setShowOrderAgenda(true)}
+                      className={`flex-1 py-2 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${showOrderAgenda ? 'bg-brand-purple text-white shadow-lg' : 'text-slate-500 hover:text-slate-400'}`}
+                    >
+                      Agenda
+                    </button>
+                  </div>
+                )}
+
                 <AnimatePresence mode="wait">
                   {!showSales ? (
                     <motion.div
@@ -1046,3 +1119,640 @@ export default function App() {
   );
 }
 
+interface OrderAgendaViewProps {
+  orders: Order[];
+  setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
+  salesConfig: {
+    orgMin: number;
+    orgMax: number;
+    vapoMin: number;
+    vapoMax: number;
+    vapoLimit: number;
+  };
+  weights: Record<string, number>;
+}
+
+function OrderAgendaView({ orders, setOrders, salesConfig, weights }: OrderAgendaViewProps) {
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [showDeliveryWarning, setShowDeliveryWarning] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [activeNotesOrder, setActiveNotesOrder] = useState<Order | null>(null);
+  const [orderToDeleteId, setOrderToDeleteId] = useState<string | null>(null);
+  const [noteText, setNoteText] = useState('');
+  const [newOrder, setNewOrder] = useState<Partial<Order>>({
+    orgName: '',
+    buyerName: '',
+    quantity: 0,
+    recipients: [],
+    requestDate: new Date().toISOString().slice(0, 16),
+    deliveryDate: '',
+    status: 'Pendente',
+    notes: [],
+  });
+  const [recipientInput, setRecipientInput] = useState('');
+
+  const orderValue = useMemo(() => {
+    const qty = newOrder.quantity || 0;
+    return qty * salesConfig.orgMax;
+  }, [newOrder.quantity, salesConfig.orgMax]);
+
+  const orderWeight = useMemo(() => {
+    return (newOrder.quantity || 0) * weights.product;
+  }, [newOrder.quantity, weights.product]);
+
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
+    if (!newOrder.orgName?.trim()) newErrors.orgName = 'Obrigatório';
+    if (!newOrder.buyerName?.trim()) newErrors.buyerName = 'Obrigatório';
+    if (!newOrder.quantity || newOrder.quantity <= 0) {
+      newErrors.quantity = 'Mínimo 100';
+    } else if (newOrder.quantity % 100 !== 0) {
+      newErrors.quantity = 'Deve ser múltiplo de 100';
+    }
+    if (!newOrder.recipients || newOrder.recipients.length === 0) {
+      newErrors.recipients = 'Mínimo 1 destinatário';
+    }
+    if (!newOrder.requestDate) newErrors.requestDate = 'Obrigatório';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleAddOrder = () => {
+    if (!validate()) return;
+    
+    if (!newOrder.deliveryDate && !showDeliveryWarning) {
+      setShowDeliveryWarning(true);
+      return;
+    }
+
+    const order: Order = {
+      id: Math.random().toString(36).substring(2, 9).toUpperCase(),
+      orgName: newOrder.orgName!,
+      buyerName: newOrder.buyerName!,
+      quantity: newOrder.quantity!,
+      totalValue: orderValue,
+      totalWeight: orderWeight,
+      recipients: newOrder.recipients || [],
+      requestDate: new Date().toISOString(),
+      deliveryDate: newOrder.deliveryDate || '',
+      createdAt: new Date().toISOString(),
+      status: 'Pendente',
+      notes: [],
+    };
+
+    setOrders([order, ...orders]);
+    closeModal();
+  };
+
+  const closeModal = () => {
+    setShowAddForm(false);
+    setShowDeliveryWarning(false);
+    setErrors({});
+    setNewOrder({
+      orgName: '',
+      buyerName: '',
+      quantity: 0,
+      recipients: [],
+      requestDate: new Date().toISOString().slice(0, 16),
+      deliveryDate: '',
+      status: 'Pendente',
+    });
+  };
+
+  const deleteOrder = (id: string) => {
+    setOrderToDeleteId(id);
+  };
+
+  const confirmDelete = () => {
+    if (orderToDeleteId) {
+      setOrders(orders.filter(o => o.id !== orderToDeleteId));
+      setOrderToDeleteId(null);
+    }
+  };
+
+  const updateStatus = (id: string, status: Order['status']) => {
+    setOrders(orders.map(o => o.id === id ? { ...o, status } : o));
+  };
+
+  const addNote = (orderId: string) => {
+    if (!noteText.trim()) return;
+    const note = {
+      id: Math.random().toString(36).substring(2, 9),
+      text: noteText.trim(),
+      date: new Date().toISOString(),
+    };
+    setOrders(orders.map(o => o.id === orderId ? { ...o, notes: [note, ...o.notes] } : o));
+    setNoteText('');
+  };
+
+  const deleteNote = (orderId: string, noteId: string) => {
+    setOrders(orders.map(o => o.id === orderId ? { ...o, notes: o.notes.filter(n => n.id !== noteId) } : o));
+  };
+
+  const addRecipient = () => {
+    if (recipientInput.trim() && !newOrder.recipients?.includes(recipientInput.trim())) {
+      setNewOrder(prev => ({
+        ...prev,
+        recipients: [...(prev.recipients || []), recipientInput.trim()]
+      }));
+      setRecipientInput('');
+    }
+  };
+
+  const removeRecipient = (tag: string) => {
+    setNewOrder(prev => ({
+      ...prev,
+      recipients: prev.recipients?.filter(r => r !== tag)
+    }));
+  };
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      className="space-y-6"
+    >
+      <div className="flex justify-between items-center border-b border-slate-800/60 pb-4">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-black text-white italic tracking-tighter uppercase text-metallic pr-2">Agenda de Pedidos</h2>
+          <p className="text-slate-500 text-[9px] font-black uppercase tracking-[0.2em] opacity-60">Gestão de Demandas Externas</p>
+        </div>
+        <button 
+          onClick={() => setShowAddForm(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-brand-purple text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-purple-900/20 active:scale-95 transition-all"
+        >
+          <Plus className="w-4 h-4" />
+          Novo Pedido
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {orders.length === 0 ? (
+          <div className="lg:col-span-2 py-20 flex flex-col items-center justify-center border-2 border-dashed border-slate-800/40 rounded-[2.5rem] text-slate-600">
+            <History className="w-12 h-12 mb-4 opacity-20" />
+            <p className="text-xs font-bold uppercase tracking-[0.2em]">Nenhum pedido registrado</p>
+          </div>
+        ) : (
+          orders.map(order => (
+            <div key={order.id} className="glass-card rounded-3xl p-5 border border-slate-800/40 hover:border-brand-purple/30 transition-all group relative overflow-hidden flex flex-col">
+               <div className="flex justify-between items-start mb-4 relative z-10">
+                  <div className="space-y-1">
+                     <div className="flex items-center gap-2">
+                        <span className="text-[7px] font-black text-brand-purple/60 uppercase tracking-[0.3em]">#{order.id}</span>
+                        <div className={`px-2 py-0.5 rounded-full text-[6px] font-black uppercase tracking-widest ${
+                          order.status === 'Entregue' ? 'bg-green-500/10 text-green-500 border border-green-500/20' :
+                          order.status === 'Cancelado' ? 'bg-red-500/10 text-red-500 border border-red-500/20' :
+                          'bg-brand-gold/10 text-brand-gold border border-brand-gold/20 shadow-[0_0_8px_rgba(234,179,8,0.1)]'
+                        }`}>
+                          {order.status}
+                        </div>
+                     </div>
+                     <h3 className="text-lg font-black text-white italic tracking-tight uppercase leading-none truncate max-w-[180px]">{order.orgName}</h3>
+                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest truncate max-w-[180px]">{order.buyerName}</p>
+                  </div>
+                  <div className="text-right">
+                     <div className="text-xl font-mono font-black text-brand-purple leading-none drop-shadow-2xl text-metallic">${order.totalValue.toLocaleString()}</div>
+                     <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest">Total Líquido</span>
+                  </div>
+               </div>
+
+               <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div className="p-3 bg-white/2 rounded-2xl border border-white/5 group-hover:border-brand-purple/10 transition-colors">
+                     <div className="text-[7px] font-black text-slate-500 uppercase tracking-widest mb-1">Volume</div>
+                     <div className="flex items-end gap-1">
+                        <span className="text-xl font-mono font-black text-white leading-none">{order.quantity}</span>
+                        <span className="text-[8px] font-black text-slate-600 uppercase pb-0.5">UNS</span>
+                     </div>
+                  </div>
+                  <div className="p-3 bg-white/2 rounded-2xl border border-white/5 group-hover:border-brand-purple/10 transition-colors">
+                     <div className="text-[7px] font-black text-slate-500 uppercase tracking-widest mb-1">Logística</div>
+                     <div className="flex items-end gap-1">
+                        <span className="text-xl font-mono font-black text-brand-silver leading-none">{order.totalWeight.toFixed(1)}</span>
+                        <span className="text-[8px] font-black text-slate-600 uppercase pb-0.5">KGS</span>
+                     </div>
+                  </div>
+               </div>
+
+               <div className="space-y-2 mb-4 bg-black/20 p-3 rounded-2xl border border-white/2">
+                  <div className="flex items-center gap-3 text-[8px] text-slate-400 uppercase font-bold tracking-widest">
+                     <Calendar className="w-2.5 h-2.5 text-brand-purple/60" />
+                     <span>Solicitado: <span className="text-slate-200">{new Date(order.requestDate).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span></span>
+                  </div>
+                  {order.deliveryDate ? (
+                    <div className="flex items-center gap-3 text-[8px] text-slate-400 uppercase font-bold tracking-widest">
+                      <Clock className="w-2.5 h-2.5 text-brand-gold/60" />
+                      <span>Entrega: <span className="text-brand-gold">{new Date(order.deliveryDate).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span></span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3 text-[8px] text-slate-600 uppercase font-bold tracking-widest italic">
+                      <Clock className="w-2.5 h-2.5 opacity-20" />
+                      <span>Entrega não definida</span>
+                    </div>
+                  )}
+               </div>
+
+               {order.recipients.length > 0 && (
+                 <div className="flex flex-wrap gap-1 mb-4">
+                   {order.recipients.map((rec, i) => (
+                     <span key={i} className="px-2 py-0.5 bg-brand-purple/5 border border-brand-purple/10 rounded-full text-[6px] font-black text-brand-purple/60 uppercase tracking-widest">
+                       {rec}
+                     </span>
+                   ))}
+                 </div>
+               )}
+
+               <div className="mt-auto pt-4 border-t border-slate-800/40 flex items-center justify-between">
+                  <div className="flex gap-1">
+                    <div className="relative group/tooltip">
+                      <button 
+                        onClick={() => updateStatus(order.id, 'Pendente')}
+                        className={`p-2 rounded-lg transition-all ${order.status === 'Pendente' ? 'bg-brand-gold text-[#0f1115]' : 'bg-slate-800/40 text-slate-600 hover:text-slate-400'}`}
+                        title="Marcar como Pendente"
+                      >
+                        <Clock className="w-3.5 h-3.5" />
+                      </button>
+                      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-900 border border-slate-800 text-[6px] text-white font-black uppercase tracking-widest rounded opacity-0 pointer-events-none group-hover/tooltip:opacity-100 transition-opacity whitespace-nowrap z-50">
+                        Pendente
+                      </span>
+                    </div>
+
+                    <div className="relative group/tooltip">
+                      <button 
+                        onClick={() => updateStatus(order.id, 'Entregue')}
+                        className={`p-2 rounded-lg transition-all ${order.status === 'Entregue' ? 'bg-green-500 text-white' : 'bg-slate-800/40 text-slate-600 hover:text-slate-400'}`}
+                        title="Marcar como Entregue"
+                      >
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                      </button>
+                      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-900 border border-slate-800 text-[6px] text-white font-black uppercase tracking-widest rounded opacity-0 pointer-events-none group-hover/tooltip:opacity-100 transition-opacity whitespace-nowrap z-50">
+                        Entregue
+                      </span>
+                    </div>
+
+                    <div className="relative group/tooltip">
+                      <button 
+                        onClick={() => updateStatus(order.id, 'Cancelado')}
+                        className={`p-2 rounded-lg transition-all ${order.status === 'Cancelado' ? 'bg-red-500 text-white' : 'bg-slate-800/40 text-slate-600 hover:text-slate-400'}`}
+                        title="Marcar como Cancelado"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-900 border border-slate-800 text-[6px] text-white font-black uppercase tracking-widest rounded opacity-0 pointer-events-none group-hover/tooltip:opacity-100 transition-opacity whitespace-nowrap z-50">
+                        Cancelar
+                      </span>
+                    </div>
+
+                    <div className="relative group/tooltip ml-2">
+                      <button 
+                        onClick={() => setActiveNotesOrder(order)}
+                        className={`p-2 rounded-lg transition-all relative ${order.notes.length > 0 ? 'bg-brand-purple/20 text-brand-purple border border-brand-purple/20' : 'bg-slate-800/40 text-slate-600 hover:text-slate-400'}`}
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        {order.notes.length > 0 && (
+                          <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-brand-purple text-white text-[7px] font-black rounded-full flex items-center justify-center border border-[#0f1115] shadow-lg">
+                            {order.notes.length}
+                          </span>
+                        )}
+                      </button>
+                      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-900 border border-slate-800 text-[6px] text-white font-black uppercase tracking-widest rounded opacity-0 pointer-events-none group-hover/tooltip:opacity-100 transition-opacity whitespace-nowrap z-50">
+                        Anexar Observação
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="relative group/tooltip">
+                    <button 
+                      onClick={() => deleteOrder(order.id)} 
+                      className="p-2 text-slate-700 hover:text-white hover:bg-red-500 transition-all rounded-lg"
+                      title="Excluir Pedido"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="absolute bottom-full right-0 mb-2 px-2 py-1 bg-slate-900 border border-slate-800 text-[6px] text-white font-black uppercase tracking-widest rounded opacity-0 pointer-events-none group-hover/tooltip:opacity-100 transition-opacity whitespace-nowrap z-50">
+                      Excluir
+                    </span>
+                  </div>
+               </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      <AnimatePresence>
+        {orderToDeleteId && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setOrderToDeleteId(null)}
+              className="absolute inset-0 bg-black/90 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative w-full max-w-sm bg-[#0f1115] border border-red-500/20 rounded-[2.5rem] p-8 shadow-2xl text-center overflow-hidden transition-colors"
+            > 
+              <div className="absolute top-0 left-0 w-full h-1 bg-red-500 opacity-30"></div>
+              
+              <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-red-500/20">
+                <Trash2 className="w-8 h-8 text-red-500" />
+              </div>
+
+              <h2 className="text-xl font-black text-white uppercase italic tracking-tighter mb-2 italic">Confirmar Exclusão?</h2>
+              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-relaxed mb-8">
+                Esta ação é irreversível. O pedido será removido permanentemente de todos os registros da agenda.
+              </p>
+
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setOrderToDeleteId(null)}
+                  className="flex-1 py-3 bg-slate-900 border border-slate-800 rounded-2xl text-[9px] font-black text-slate-400 uppercase tracking-widest hover:text-white transition-all"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={confirmDelete}
+                  className="flex-1 py-3 bg-red-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-red-900/20 hover:bg-red-600 active:scale-95 transition-all text-metallic"
+                >
+                  Excluir Agora
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {activeNotesOrder && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+             <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setActiveNotesOrder(null)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative w-full max-w-lg bg-[#0f1115] border border-slate-800 rounded-4xl p-6 shadow-2xl flex flex-col max-h-[80vh] overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-brand-purple to-transparent opacity-50"></div>
+              
+              <div className="flex justify-between items-center mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-brand-purple/10 rounded-xl flex items-center justify-center border border-brand-purple/20">
+                    <MessageSquare className="w-5 h-5 text-brand-purple" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black text-white italic tracking-tight uppercase">Observações</h2>
+                    <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest truncate max-w-[200px]">{activeNotesOrder.orgName}</p>
+                  </div>
+                </div>
+                <button onClick={() => setActiveNotesOrder(null)} className="p-2 text-slate-500 hover:text-white transition-colors">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="flex gap-2 mb-6">
+                <input 
+                  type="text"
+                  value={noteText}
+                  onChange={e => setNoteText(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && addNote(activeNotesOrder.id)}
+                  placeholder="Escrever observação..."
+                  className="flex-1 bg-slate-900/50 border border-slate-800 rounded-2xl px-4 py-3 text-sm text-white outline-none focus:border-brand-purple transition-all"
+                />
+                <button 
+                  onClick={() => addNote(activeNotesOrder.id)}
+                  className="px-6 bg-brand-purple text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-brand-purple-dark active:scale-95 transition-all"
+                >
+                  Adicionar
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+                {(orders.find(o => o.id === activeNotesOrder.id)?.notes || []).length === 0 ? (
+                  <div className="py-10 text-center text-slate-600 space-y-2">
+                    <MessageSquare className="w-8 h-8 mx-auto opacity-10" />
+                    <p className="text-[8px] font-black uppercase tracking-widest">Nenhuma anotação vinculada</p>
+                  </div>
+                ) : (
+                  (orders.find(o => o.id === activeNotesOrder.id)?.notes || []).map(note => (
+                    <div key={note.id} className="p-4 bg-white/2 border border-white/5 rounded-2xl relative group/note">
+                      <div className="flex justify-between items-start mb-1">
+                        <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest">
+                          {new Date(note.date).toLocaleString('pt-BR')}
+                        </span>
+                        <button 
+                          onClick={() => deleteNote(activeNotesOrder.id, note.id)}
+                          className="opacity-0 group-hover/note:opacity-100 p-1 text-slate-600 hover:text-red-500 transition-all"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                      <p className="text-sm text-slate-200 leading-relaxed">{note.text}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showAddForm && (
+          <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowAddForm(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative w-full max-w-xl bg-[#0f1115] border border-slate-800 rounded-4xl p-6 shadow-2xl overflow-hidden focus-within:border-brand-purple/50 transition-colors"
+            >
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-brand-purple to-transparent opacity-50"></div>
+              
+              <div className="flex justify-between items-center mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-brand-purple/10 rounded-xl flex items-center justify-center border border-brand-purple/20">
+                    <Plus className="w-5 h-5 text-brand-purple" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black text-white italic tracking-tight uppercase">Novo Pedido</h2>
+                    <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Gerenciamento de Agenda</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={closeModal}
+                  className="p-2 text-slate-500 hover:text-white transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] px-1 flex justify-between">
+                      Organização/Facção
+                      {errors.orgName && <span className="text-red-500 animate-pulse">{errors.orgName}</span>}
+                    </label>
+                    <input 
+                      type="text"
+                      value={newOrder.orgName}
+                      onChange={e => setNewOrder(p => ({...p, orgName: e.target.value}))}
+                      placeholder="Ex: Família Soprano"
+                      className={`w-full bg-slate-900/50 border rounded-2xl px-4 py-3 text-sm text-white outline-none focus:border-brand-purple transition-all ${errors.orgName ? 'border-red-500/50' : 'border-slate-800'}`}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] px-1 flex justify-between">
+                      Nome do Comprador
+                      {errors.buyerName && <span className="text-red-500 animate-pulse">{errors.buyerName}</span>}
+                    </label>
+                    <input 
+                      type="text"
+                      value={newOrder.buyerName}
+                      onChange={e => setNewOrder(p => ({...p, buyerName: e.target.value}))}
+                      placeholder="Ex: Tony Montana"
+                      className={`w-full bg-slate-900/50 border rounded-2xl px-4 py-3 text-sm text-white outline-none focus:border-brand-purple transition-all ${errors.buyerName ? 'border-red-500/50' : 'border-slate-800'}`}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] px-1 flex justify-between">
+                      Quantidade Solicitada
+                      {errors.quantity && <span className="text-red-500 animate-pulse">{errors.quantity}</span>}
+                    </label>
+                    <input 
+                      type="number"
+                      step="100"
+                      value={newOrder.quantity || ''}
+                      onChange={e => setNewOrder(p => ({...p, quantity: parseInt(e.target.value) || 0}))}
+                      placeholder="Ex: 500"
+                      className={`w-full bg-slate-900/50 border rounded-2xl px-4 py-3 text-sm font-mono text-white outline-none focus:border-brand-purple transition-all ${errors.quantity ? 'border-red-500/50' : 'border-slate-800'}`}
+                    />
+                    <p className="text-[7px] text-slate-600 uppercase font-bold tracking-widest pl-1 mt-1">Sempre múltiplos de 100</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1.5">
+                      <label className="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] px-1">Subtotal (Auto)</label>
+                      <div className="bg-slate-900 border border-slate-800 rounded-2xl px-4 py-3 text-sm font-mono text-brand-purple font-black">
+                        ${orderValue.toLocaleString()}
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] px-1">Peso (Auto)</label>
+                      <div className="bg-slate-900 border border-slate-800 rounded-2xl px-4 py-3 text-sm font-mono text-brand-silver font-black">
+                        {orderWeight.toFixed(1)}kg
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] px-1 flex justify-between">
+                    Destinatários autorizados
+                    {errors.recipients && <span className="text-red-500 animate-pulse">{errors.recipients}</span>}
+                  </label>
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <input 
+                        type="text"
+                        value={recipientInput}
+                        onChange={e => setRecipientInput(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && addRecipient()}
+                        placeholder="Adicionar nome..."
+                        className="flex-1 bg-slate-900/50 border border-slate-800 rounded-2xl px-4 py-3 text-sm text-white outline-none focus:border-brand-purple transition-all"
+                      />
+                      <button 
+                        onClick={addRecipient}
+                        className="p-3 bg-brand-purple/10 border border-brand-purple/20 rounded-2xl text-brand-purple hover:bg-brand-purple hover:text-white transition-all"
+                      >
+                        <Plus className="w-5 h-5" />
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {(newOrder.recipients || []).map(r => (
+                        <span key={r} className="flex items-center gap-2 px-3 py-1 bg-brand-purple/10 border border-brand-purple/20 rounded-full text-[8px] font-black text-brand-purple uppercase tracking-widest">
+                          {r}
+                          <button onClick={() => removeRecipient(r)}><X className="w-3 h-3" /></button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                   <div className="space-y-1.5">
+                    <label className="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] px-1 flex justify-between">
+                      Data de Solicitação
+                      {errors.requestDate && <span className="text-red-500 animate-pulse">{errors.requestDate}</span>}
+                    </label>
+                    <input 
+                      type="datetime-local"
+                      value={newOrder.requestDate}
+                      onChange={e => setNewOrder(p => ({...p, requestDate: e.target.value}))}
+                      className={`w-full bg-slate-900/50 border rounded-2xl px-4 py-3 text-sm text-white outline-none focus:border-brand-purple transition-all ${errors.requestDate ? 'border-red-500/50' : 'border-slate-800'}`}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] px-1">Data de Entrega (Opcional)</label>
+                    <input 
+                      type="datetime-local"
+                      value={newOrder.deliveryDate}
+                      onChange={e => {
+                        setNewOrder(p => ({...p, deliveryDate: e.target.value}));
+                        setShowDeliveryWarning(false);
+                      }}
+                      className="w-full bg-slate-900/50 border border-slate-800 rounded-2xl px-4 py-3 text-sm text-white outline-none focus:border-brand-purple transition-all"
+                    />
+                  </div>
+                </div>
+
+                <AnimatePresence>
+                  {showDeliveryWarning && (
+                    <motion.div 
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="p-3 bg-brand-gold/10 border border-brand-gold/20 rounded-2xl overflow-hidden"
+                    >
+                      <div className="flex items-start gap-3">
+                        <AlertCircle className="w-4 h-4 text-brand-gold shrink-0 mt-0.5" />
+                        <p className="text-[9px] text-brand-gold/80 font-bold uppercase leading-relaxed">
+                          A data de entrega não foi definida. Confirmar registro sem prazo de finalização?
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <button 
+                  onClick={handleAddOrder}
+                  className="w-full py-4 mt-2 bg-brand-purple text-white rounded-3xl text-sm font-black uppercase tracking-[0.3em] shadow-xl shadow-purple-900/20 active:scale-[0.98] transition-all hover:bg-brand-purple-dark"
+                >
+                  {showDeliveryWarning ? 'Sim, Confirmar Registro' : 'Registrar Pedido na Agenda'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
