@@ -109,6 +109,9 @@ export default function App() {
   const [saleUnits, setSaleUnits] = useState<string>("");
   const [salePrice, setSalePrice] = useState(150);
   const [isVapo, setIsVapo] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<"clean" | "dirty">(
+    "clean",
+  );
   const [notifications, setNotifications] = useState<
     { id: string; message: string; orderId: string }[]
   >([]);
@@ -163,9 +166,15 @@ export default function App() {
     vapoMin: 150,
     vapoMax: 200,
     vapoLimit: 500,
+    dirtyMoneyTax: 65,
   });
 
-  const totalPrice = (parseInt(saleUnits) || 0) * salePrice;
+  const cleanTotalPrice = (parseInt(saleUnits) || 0) * salePrice;
+  const totalPrice =
+    paymentMethod === "clean"
+      ? cleanTotalPrice
+      : cleanTotalPrice / (1 - salesConfig.dirtyMoneyTax / 100);
+
   const totalWeight = (parseInt(saleUnits) || 0) * weights.product;
   const isVapoOverLimit =
     isVapo && (parseInt(saleUnits) || 0) > salesConfig.vapoLimit;
@@ -643,6 +652,50 @@ export default function App() {
                         className="w-full accent-brand-purple h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer"
                       />
                     </div>
+
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[9px] font-black text-slate-600 uppercase tracking-tighter">
+                          Taxa Dinheiro Sujo (%)
+                        </span>
+                        <span className="text-[10px] font-mono font-bold text-brand-purple">
+                          {salesConfig.dirtyMoneyTax}%
+                        </span>
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="range"
+                          min="30"
+                          max="65"
+                          step="1"
+                          value={salesConfig.dirtyMoneyTax}
+                          onChange={(e) =>
+                            setSalesConfig((prev) => ({
+                              ...prev,
+                              dirtyMoneyTax: parseInt(e.target.value),
+                            }))
+                          }
+                          className="flex-1 accent-brand-purple h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer"
+                        />
+                        <input
+                          type="number"
+                          min="30"
+                          max="65"
+                          value={salesConfig.dirtyMoneyTax}
+                          onChange={(e) => {
+                            const val = Math.min(
+                              65,
+                              Math.max(30, parseInt(e.target.value) || 30),
+                            );
+                            setSalesConfig((prev) => ({
+                              ...prev,
+                              dirtyMoneyTax: val,
+                            }));
+                          }}
+                          className="w-10 bg-slate-900 border border-slate-800 rounded p-1 text-[10px] text-white outline-none focus:border-brand-purple/50 text-center"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -659,7 +712,7 @@ export default function App() {
             )}
           </AnimatePresence>
 
-          <div className="mt-6 p-3 bg-brand-purple/5 border border-brand-purple/20 rounded-2xl relative overflow-hidden group">
+          <div className="mt-auto mt-6 p-3 bg-brand-purple/5 border border-brand-purple/20 rounded-2xl relative overflow-hidden group">
             <div className="absolute -top-3 -right-3 opacity-5 group-hover:opacity-10 group-hover:-rotate-12 transition-all duration-500">
               <Crown className="w-16 h-16 text-brand-gold" />
             </div>
@@ -705,6 +758,37 @@ export default function App() {
                       </div>
 
                       <div className="grid grid-cols-1 gap-4">
+                        {/* Payment Method Toggle */}
+                        <div className="space-y-1">
+                          <label className="text-[8px] uppercase font-black text-slate-500 tracking-[0.2em] px-1">
+                            Método de Pagamento
+                          </label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              onClick={() => setPaymentMethod("clean")}
+                              className={`p-3 rounded-2xl border transition-all flex flex-col items-center gap-1.5 ${paymentMethod === "clean" ? "bg-brand-purple/10 border-brand-purple shadow-2xl" : "bg-[#161b22]/40 border-slate-800 opacity-50"}`}
+                            >
+                              <TrendingUp
+                                className={`w-4 h-4 ${paymentMethod === "clean" ? "text-brand-purple" : "text-slate-600"}`}
+                              />
+                              <span className="text-[8px] font-black uppercase tracking-widest">
+                                Dinheiro Limpo
+                              </span>
+                            </button>
+                            <button
+                              onClick={() => setPaymentMethod("dirty")}
+                              className={`p-3 rounded-2xl border transition-all flex flex-col items-center gap-1.5 ${paymentMethod === "dirty" ? "bg-brand-purple/10 border-brand-purple shadow-2xl" : "bg-[#161b22]/40 border-slate-800 opacity-50"}`}
+                            >
+                              <History
+                                className={`w-4 h-4 ${paymentMethod === "dirty" ? "text-brand-purple" : "text-slate-600"}`}
+                              />
+                              <span className="text-[8px] font-black uppercase tracking-widest">
+                                Dinheiro Sujo
+                              </span>
+                            </button>
+                          </div>
+                        </div>
+
                         {/* Sale Type Toggle */}
                         <div className="space-y-1">
                           <label className="text-[8px] uppercase font-black text-slate-500 tracking-[0.2em] px-1">
@@ -811,8 +895,14 @@ export default function App() {
                           <div className="text-6xl font-black text-white font-mono tracking-tighter leading-none mb-3 tabular-nums text-metallic">
                             ${totalPrice.toLocaleString()}
                           </div>
-                          <div className="text-brand-purple font-black text-[10px] uppercase tracking-[0.4em] italic mb-8 flex items-center justify-center gap-3 pr-2">
-                            Pagamento Imediato
+                          <div className="text-brand-purple font-black text-[10px] uppercase tracking-[0.4em] italic mb-8 flex flex-col items-center justify-center gap-1 pr-2">
+                            <span>Pagamento Imediato</span>
+                            {paymentMethod === "dirty" && (
+                              <span className="text-[7px] text-brand-gold animate-pulse">
+                                Equivalente Limpo: $
+                                {cleanTotalPrice.toLocaleString()}
+                              </span>
+                            )}
                           </div>
 
                           <div className="bg-[#0f1115]/90 backdrop-blur-xl border border-slate-700/40 rounded-4xl p-6 text-left space-y-4 shadow-inner">
@@ -834,17 +924,31 @@ export default function App() {
                                   ${salePrice}
                                 </span>
                               </div>
+                              {paymentMethod === "dirty" && (
+                                <div className="flex justify-between items-center text-slate-500 border-b border-white/5 pb-3 italic pr-1">
+                                  <span className="text-[9px] font-bold uppercase tracking-widest">
+                                    Taxa de Lavagem
+                                  </span>
+                                  <span className="text-sm font-mono font-bold text-brand-gold">
+                                    {salesConfig.dirtyMoneyTax}%
+                                  </span>
+                                </div>
+                              )}
                               <div className="pt-1 flex justify-between items-center">
                                 <div className="flex flex-col">
                                   <span className="text-[11px] font-black uppercase tracking-widest text-brand-gold leading-tight">
-                                    Valor Final
+                                    Valor Total (
+                                    {paymentMethod === "clean"
+                                      ? "Limpo"
+                                      : "Sujo"}
+                                    )
                                   </span>
                                   <span className="text-[8px] text-slate-600 font-bold uppercase tracking-tight">
                                     Cobrança única
                                   </span>
                                 </div>
                                 <span className="text-4xl font-black text-white font-mono tracking-tighter text-metallic drop-shadow-2xl">
-                                  ${totalPrice.toLocaleString()}
+                                  ${Math.ceil(totalPrice).toLocaleString()}
                                 </span>
                               </div>
                             </div>
@@ -1466,6 +1570,33 @@ export default function App() {
                               className="w-full accent-brand-purple h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer"
                             />
                           </div>
+
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                              <span className="text-[9px] font-black text-slate-500 uppercase tracking-tighter">
+                                Taxa Dinheiro Sujo (%)
+                              </span>
+                              <span className="text-sm font-mono font-bold text-brand-purple">
+                                {salesConfig.dirtyMoneyTax}%
+                              </span>
+                            </div>
+                            <div className="flex gap-3">
+                              <input
+                                type="range"
+                                min="30"
+                                max="65"
+                                step="1"
+                                value={salesConfig.dirtyMoneyTax}
+                                onChange={(e) =>
+                                  setSalesConfig((prev) => ({
+                                    ...prev,
+                                    dirtyMoneyTax: parseInt(e.target.value),
+                                  }))
+                                }
+                                className="flex-1 accent-brand-purple h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer"
+                              />
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </motion.div>
@@ -1501,7 +1632,7 @@ export default function App() {
       </footer>
 
       {/* Internal Notifications */}
-      <div className="fixed bottom-24 right-6 z-200 space-y-3 pointer-events-none">
+      <div className="fixed bottom-24 right-6 z-[200] space-y-3 pointer-events-none">
         <AnimatePresence>
           {notifications.map((notif) => (
             <motion.div
@@ -2032,7 +2163,7 @@ function OrderAgendaView({
 
       <AnimatePresence>
         {orderToDeleteId && (
-          <div className="fixed inset-0 z-120 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -2052,7 +2183,7 @@ function OrderAgendaView({
                 <Trash2 className="w-8 h-8 text-red-500" />
               </div>
 
-              <h2 className="text-xl font-black text-white uppercase tracking-tighter mb-2 italic">
+              <h2 className="text-xl font-black text-white uppercase italic tracking-tighter mb-2 italic">
                 Confirmar Exclusão?
               </h2>
               <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-relaxed mb-8">
@@ -2081,7 +2212,7 @@ function OrderAgendaView({
 
       <AnimatePresence>
         {activeNotesOrder && (
-          <div className="fixed inset-0 z-110 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -2095,7 +2226,7 @@ function OrderAgendaView({
               exit={{ scale: 0.9, opacity: 0 }}
               className="relative w-full max-w-lg bg-[#0f1115] border border-slate-800 rounded-4xl p-6 shadow-2xl flex flex-col max-h-[80vh] overflow-hidden"
             >
-              <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-transparent via-brand-purple to-transparent opacity-50"></div>
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-brand-purple to-transparent opacity-50"></div>
 
               <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center gap-3">
@@ -2197,7 +2328,7 @@ function OrderAgendaView({
               exit={{ scale: 0.9, opacity: 0 }}
               className="relative w-full max-w-xl bg-[#0f1115] border border-slate-800 rounded-4xl p-6 shadow-2xl overflow-hidden focus-within:border-brand-purple/50 transition-colors"
             >
-              <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-transparent via-brand-purple to-transparent opacity-50"></div>
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-brand-purple to-transparent opacity-50"></div>
 
               <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center gap-3">
